@@ -1,0 +1,33 @@
+{
+    "private": true,
+    "scripts": {
+        "start": "npm install && npm run watch",
+        "dev": "wp-scripts build",
+        "watch": "wp-scripts start",
+        "build": "wp-scripts build",
+        "env": "wp-env"
+    },
+    "devDependencies": {
+        "@types/react": "^18.2.21",
+        "@types/react-dom": "^18.2.7",
+        "@types/wordpress__block-editor": "^11.5.1",
+        "@types/wordpress__components": "^23.0.1",
+        "@types/wordpress__element": "^2.14.1",
+        "@types/wordpress__i18n": "^3.11.0",
+        "@wordpress/scripts": "^25.2.0",
+        "interweave": "^13.0.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "resolve-url-loader": "^4.0.0",
+        "typescript": "^5.8.2",
+        "typescript-plugin-css-modules": "^3.4.0",
+        "wp-pot": "^1.7.0",
+        "wp-textdomain": "^1.0.1"
+    },
+    "dependencies": {
+        "@givewp/form-builder-library": "^1.7.1",
+        "@wordpress/api-fetch": "^6.26.0",
+        "@wordpress/i18n": "^4.30.0",
+        "@wordpress/icons": "^9.32.0"
+    }
+}

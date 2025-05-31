@@ -1,0 +1,43 @@
+{
+    "name": "impress-org/give-faker",
+    "description": "Generate fake data for GiveWP",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.5",
+        "phpcompatibility/phpcompatibility-wp": "^2.1",
+        "wp-coding-standards/wpcs": "^2.3",
+        "phpcompatibility/php-compatibility": "^9.3",
+        "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
+        "yoast/phpunit-polyfills": "^4.0"
+    },
+    "scripts": {
+        "test": "./vendor/bin/phpunit --colors --stop-on-failure",
+        "lint:php": "./vendor/bin/phpcs -v -s --colors",
+        "lint:php:fix": "./vendor/bin/phpcbf -v --colors",
+        "post-install-cmd": [
+            "@install-codestandards"
+        ],
+        "install-codestandards": [
+            "Dealerdirect\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
+        ]
+    },
+    "autoload": {
+        "psr-4": {
+            "GiveFaker\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "GiveFaker\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "7.4.0"
+        },
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}
