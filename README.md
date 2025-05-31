@@ -161,3 +161,38 @@ To compile your CSS & JS assets, run one of the following:
 - `npm run watch` — Compiles all assets for development one time and then watches for changes, supporting [BrowserSync](https://laravel-mix.com/docs/5.0/browsersync)
 - `npm run hot` — Compiles all assets for development one time and then watches for [hot replacement](https://laravel-mix.com/docs/5.0/hot-module-replacement)
 - `npm run dev` — Compiles all assets for production one time
+
+## Testing
+
+This addon includes comprehensive unit and integration tests to ensure reliability and maintainability.
+
+### Running Tests
+
+```bash
+# Quick test run
+./run-tests.sh
+
+# Run specific test class
+./run-tests.sh TestDonationGenerator
+
+# Run specific test method
+./run-tests.sh testGenerateDonationsWithValidParameters
+```
+
+### Test Coverage
+
+- **Core Functionality**: 15 tests covering donation generation, validation, and data integrity
+- **Admin Interface**: 10 tests ensuring proper UI rendering and interaction
+- **Service Provider**: 8 tests validating WordPress integration and hooks
+- **Integration**: 8 tests covering complete end-to-end workflows
+- **Performance**: Tests ensure 100 donations generate in < 30 seconds
+
+### Prerequisites
+
+- WordPress test environment
+- GiveWP plugin installed
+- PHPUnit (included with GiveWP)
+
+For detailed testing information, see [TESTING.md](TESTING.md).
+
+## Contributing

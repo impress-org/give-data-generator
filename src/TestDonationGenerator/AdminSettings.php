@@ -37,6 +37,11 @@ class AdminSettings
     public function renderAdminPage()
     {
         $campaigns = $this->getCampaigns();
+
+        // Ensure $campaigns is always an array
+        if (!is_array($campaigns)) {
+            $campaigns = [];
+        }
         ?>
         <div class="wrap">
             <h1><?php _e('Test Donation Generator', 'give-faker'); ?></h1>
@@ -207,6 +212,11 @@ class AdminSettings
     {
         try {
             $campaigns = Campaign::query()->getAll();
+
+            // Ensure we always return an array
+            if (!is_array($campaigns)) {
+                $campaigns = [];
+            }
 
             // Debug: Log how many campaigns we found
             error_log('Test Donation Generator: Found ' . count($campaigns) . ' campaigns');

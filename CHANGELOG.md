@@ -44,6 +44,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Comprehensive unit test suite (41 tests)
+  - DonationGenerator tests (15 tests)
+  - AdminSettings tests (10 tests)
+  - ServiceProvider tests (8 tests)
+  - Integration tests (8 tests)
+- Test runner script (`run-tests.sh`)
+- Testing documentation (`TESTING.md`)
+- PHPUnit configuration
+- Performance benchmarks for donation generation
+
 ### Planned
 - Additional donor data fields (occupation, age ranges)
 - International address formats
