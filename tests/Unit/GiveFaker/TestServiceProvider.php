@@ -76,9 +76,11 @@ class TestServiceProvider extends TestCase
     {
         $this->serviceProvider->boot();
 
-        // Check that AJAX hooks are registered
+        // Check that AJAX hook is registered (only for logged-in users)
         $this->assertGreaterThan(0, has_action('wp_ajax_generate_test_donations'));
-        $this->assertGreaterThan(0, has_action('wp_ajax_nopriv_generate_test_donations'));
+
+        // We don't register nopriv hook since this is admin-only functionality
+        $this->assertFalse(has_action('wp_ajax_nopriv_generate_test_donations'));
     }
 
     /**

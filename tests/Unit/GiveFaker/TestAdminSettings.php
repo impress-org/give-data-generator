@@ -220,21 +220,27 @@ class TestAdminSettings extends TestCase
     }
 
     /**
-     * Test that JavaScript is included in the page.
+     * Test that JavaScript dependencies are set up correctly.
      *
      * @since 1.0.0
      */
-    public function testJavaScriptIsIncluded()
+    public function testJavaScriptDependenciesAreSetUp()
     {
         ob_start();
         $this->adminSettings->renderAdminPage();
         $output = ob_get_clean();
 
-        // Check for JavaScript elements
-        $this->assertStringContainsString('<script>', $output);
-        $this->assertStringContainsString('testDonationGenerator', $output);
-        $this->assertStringContainsString('jQuery(document).ready', $output);
-        $this->assertStringContainsString('#test-donation-generator-form', $output);
+        // Check that the form has the necessary IDs and classes for JavaScript to work
+        $this->assertStringContainsString('id="test-donation-generator-form"', $output);
+        $this->assertStringContainsString('id="date_range"', $output);
+        $this->assertStringContainsString('id="custom-date-range"', $output);
+        $this->assertStringContainsString('id="generate-donations"', $output);
+        $this->assertStringContainsString('class="spinner"', $output);
+        $this->assertStringContainsString('id="generation-results"', $output);
+
+        // The JavaScript should now be enqueued separately through ServiceProvider
+        // So we don't expect inline <script> tags in the admin page output
+        $this->assertStringNotContainsString('<script>', $output);
     }
 
     /**

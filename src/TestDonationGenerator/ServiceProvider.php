@@ -52,17 +52,25 @@ class ServiceProvider implements ServiceProviderInterface
         }
 
         wp_enqueue_script('jquery');
+
+        // Enqueue our admin script
         wp_enqueue_script(
-            'test-donation-generator',
-            GIVE_FAKER_URL . 'assets/js/admin.js',
+            'test-donation-generator-admin',
+            GIVE_FAKER_URL . 'build/admin.js',
             ['jquery'],
             GIVE_FAKER_VERSION,
             true
         );
 
-        wp_localize_script('test-donation-generator', 'testDonationGenerator', [
+        // Localize script with data and strings
+        wp_localize_script('test-donation-generator-admin', 'testDonationGenerator', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('test_donation_generator_nonce'),
+            'strings' => [
+                'errorMessage' => __('An error occurred while generating donations.', 'give-faker'),
+                'processing' => __('Processing...', 'give-faker'),
+                'success' => __('Success!', 'give-faker'),
+            ]
         ]);
     }
 }

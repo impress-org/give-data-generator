@@ -14,10 +14,7 @@ const defaultConfig = require('@wordpress/scripts/config/webpack.config.js');
 module.exports = {
     ...defaultConfig,
     entry: {
-        GiveFakerFormBuilderExtension: srcPath('FormExtension/FormBuilder/resources/js/index.tsx'),
-        GiveFakerFormBuilderExtensionGlobalStyle: srcPath('FormExtension/FormBuilder/resources/css/index.scss'),
-        GiveFakerOffSiteGateway: srcPath('OffSiteGateway/Gateway/resources/OffSiteGateway.tsx'),
-        settings: srcPath('Settings/resources/js/index.tsx'),
+        admin: srcPath('TestDonationGenerator/resources/js/admin.js'),
     },
 };
 
