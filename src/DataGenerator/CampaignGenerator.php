@@ -55,7 +55,27 @@ class CampaignGenerator
         'Wildlife Conservation',
         'Literacy Program',
         'Sports for Youth',
-        'Music Education Fund'
+        'Music Education Fund',
+        'Solar Energy Project',
+        'Women\'s Empowerment',
+        'Elder Care Support',
+        'Refugee Assistance',
+        'Local Business Recovery',
+        'Tree Planting Initiative',
+        'Special Needs Support',
+        'Artisan Craft Program',
+        'Community Kitchen',
+        'Mobile Health Clinic',
+        'Student Meal Program',
+        'Digital Inclusion',
+        'Addiction Recovery',
+        'Homeless Shelter Fund',
+        'After School Program',
+        'Bike Share Initiative',
+        'Maternal Health Care',
+        'Job Training Center',
+        'Community Safety Net',
+        'Cultural Heritage Fund'
     ];
 
     /**
