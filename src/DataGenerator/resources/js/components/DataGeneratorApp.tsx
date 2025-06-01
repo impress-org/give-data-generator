@@ -1,4 +1,4 @@
-import { useState } from '@wordpress/element';
+import React from 'react';
 import { __ } from '@wordpress/i18n';
 import { TabPanel } from '@wordpress/components';
 import DonationFormsTab from './tabs/DonationFormsTab';
@@ -7,8 +7,14 @@ import CampaignsTab from './tabs/CampaignsTab';
 import SubscriptionsTab from './tabs/SubscriptionsTab';
 import CleanupTab from './tabs/CleanupTab';
 
-const DataGeneratorApp = () => {
-    const tabs = [
+interface Tab {
+    name: string;
+    title: string;
+    content: React.ReactElement;
+}
+
+const DataGeneratorApp: React.FC = () => {
+    const tabs: Tab[] = [
         {
             name: 'campaigns',
             title: __('Campaigns', 'give-data-generator'),
@@ -49,8 +55,13 @@ const DataGeneratorApp = () => {
                 </p>
             </div>
 
-            <TabPanel className="data-generator-tabs" activeClass="is-active" orientation="vertical" tabs={tabs}>
-                {(tab) => tab.content}
+            <TabPanel
+                className="data-generator-tabs"
+                activeClass="is-active"
+                orientation="vertical"
+                tabs={tabs}
+            >
+                {(tab: Tab) => tab.content}
             </TabPanel>
         </div>
     );

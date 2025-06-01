@@ -1,4 +1,4 @@
-import { useState } from '@wordpress/element';
+import React, { useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import {
     Button,
@@ -7,15 +7,24 @@ import {
     CardBody
 } from '@wordpress/components';
 import { useDispatch } from '@wordpress/data';
+import { ApiResponse, ResultState } from '../../types';
+import dataGenerator from '../../common/getWindowData';
 
-const CleanupTab = () => {
+interface CleanupAction {
+    id: string;
+    title: string;
+    description: string;
+    buttonText: string;
+}
+
+const CleanupTab: React.FC = () => {
     const { invalidateResolution } = useDispatch('core');
-    const [isSubmitting, setIsSubmitting] = useState({});
-    const [result, setResult] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState<Record<string, boolean>>({});
+    const [result, setResult] = useState<ResultState | null>(null);
 
-    const handleCleanupAction = async (actionType) => {
+    const handleCleanupAction = async (actionType: string): Promise<void> => {
         // Ask for confirmation
-        const confirmMessages = {
+        const confirmMessages: Record<string, string> = {
             'delete_test_donations': __('Are you sure you want to delete all test mode donations? This action cannot be undone.', 'give-data-generator'),
             'delete_test_subscriptions': __('Are you sure you want to delete all test mode subscriptions? This action cannot be undone.', 'give-data-generator'),
             'archive_campaigns': __('Are you sure you want to archive all active campaigns? This action cannot be undone.', 'give-data-generator')
@@ -43,7 +52,7 @@ const CleanupTab = () => {
                 body: params
             });
 
-            const data = await response.json();
+            const data: ApiResponse = await response.json();
 
             setResult({
                 success: data.success,
@@ -67,14 +76,14 @@ const CleanupTab = () => {
             console.error('Cleanup action error:', error);
             setResult({
                 success: false,
-                message: error.message || 'An error occurred'
+                message: error instanceof Error ? error.message : 'An error occurred'
             });
         } finally {
             setIsSubmitting(prev => ({ ...prev, [actionType]: false }));
         }
     };
 
-    const cleanupActions = [
+    const cleanupActions: CleanupAction[] = [
         {
             id: 'delete_test_donations',
             title: __('Delete Test Mode Donations', 'give-data-generator'),
@@ -111,7 +120,7 @@ const CleanupTab = () => {
                     gap: '20px',
                     marginTop: '20px'
                 }}>
-                    {cleanupActions.map((action) => (
+                    {cleanupActions.map((action: CleanupAction) => (
                         <div key={action.id} style={{
                             background: '#fff',
                             border: '1px solid #c3c4c7',
@@ -127,8 +136,8 @@ const CleanupTab = () => {
                             </p>
                             <Button
                                 variant="secondary"
-                                isBusy={isSubmitting[action.id]}
-                                disabled={isSubmitting[action.id]}
+                                isBusy={isSubmitting[action.id] || false}
+                                disabled={isSubmitting[action.id] || false}
                                 onClick={() => handleCleanupAction(action.id)}
                                 style={{
                                     backgroundColor: '#d63638',

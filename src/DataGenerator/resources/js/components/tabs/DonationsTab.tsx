@@ -1,20 +1,40 @@
-import { useState, useEffect } from '@wordpress/element';
+import React, { useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import {
     Button,
     SelectControl,
     TextControl,
+    CheckboxControl,
     Notice,
     Card,
     CardBody,
     Flex,
     FlexItem
 } from '@wordpress/components';
-import {useEntityRecords} from '@wordpress/core-data';
+import { useEntityRecords } from '@wordpress/core-data';
+import { ApiResponse, ResultState, Campaign, Donor } from '../../types';
+import dataGenerator from '../../common/getWindowData';
 
-const SubscriptionsTab = () => {
-    const [campaigns, setCampaigns] = useState([]);
-    const {hasResolved: isCampaignsResolved, records: campaignRecords} = useEntityRecords('givewp', 'campaign', {
+interface DonationFormData {
+    campaign_id: string;
+    donor_creation_method: 'mixed' | 'create_new' | 'select_specific' | 'use_existing';
+    selected_donor_id: string;
+    donation_count: number;
+    date_range: 'custom' | 'last_30_days' | 'last_90_days' | 'last_year';
+    start_date: string;
+    end_date: string;
+    donation_mode: 'live' | 'test';
+    donation_status: 'failed' | 'complete' | 'pending' | 'processing' | 'refunded' | 'cancelled' | 'abandoned' | 'preapproval' | 'revoked' | 'random';
+}
+
+interface SelectOption {
+    label: string;
+    value: string;
+}
+
+const DonationsTab: React.FC = () => {
+    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    const { hasResolved: isCampaignsResolved, records: campaignRecords } = useEntityRecords('givewp', 'campaign', {
         status: ['active'],
         per_page: 100,
         orderby: 'date',
@@ -23,45 +43,63 @@ const SubscriptionsTab = () => {
 
     useEffect(() => {
         if (isCampaignsResolved && campaignRecords !== null) {
-            setCampaigns(campaignRecords);
+            setCampaigns(campaignRecords as Campaign[]);
         }
     }, [campaignRecords, isCampaignsResolved]);
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<DonationFormData>({
         campaign_id: '',
-        subscription_count: 10,
+        donor_creation_method: 'create_new',
+        selected_donor_id: '',
+        donation_count: 10,
         date_range: 'last_30_days',
         start_date: '',
         end_date: '',
-        subscription_mode: 'test',
-        subscription_status: 'active',
-        subscription_period: 'month',
-        frequency: 1,
-        installments: 0,
-        renewals_count: 0
+        donation_mode: 'test',
+        donation_status: 'complete'
     });
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [result, setResult] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [result, setResult] = useState<ResultState | null>(null);
+
+    // Get campaigns and donors from the global dataGenerator object
+    const donors: Donor[] = dataGenerator?.donors || [];
 
     // Prepare campaign options for SelectControl
-    const campaignOptions = !isCampaignsResolved ? [
+    const campaignOptions: SelectOption[] = !isCampaignsResolved ? [
         { label: __('Loading campaigns...', 'give-data-generator'), value: '' },
     ] : [
         { label: __('Select a Campaign', 'give-data-generator'), value: '' },
-        ...campaigns.map(campaign => ({
+        ...campaigns.map((campaign: Campaign) => ({
             label: campaign.title,
             value: campaign.id
         }))
     ];
 
-    const handleSubmit = async (e) => {
+    // Prepare donor options for SelectControl
+    const donorOptions: SelectOption[] = [
+        { label: __('Choose a donor...', 'give-data-generator'), value: '' },
+        ...donors.map((donor: Donor) => ({
+            label: `${donor.name} (${donor.email})`,
+            value: donor.id
+        }))
+    ];
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
 
         if (!formData.campaign_id) {
             setResult({
                 success: false,
                 message: __('Please select a campaign', 'give-data-generator')
+            });
+            return;
+        }
+
+        if (formData.donor_creation_method === 'select_specific' && !formData.selected_donor_id) {
+            setResult({
+                success: false,
+                message: __('Please select a specific donor', 'give-data-generator')
             });
             return;
         }
@@ -79,9 +117,9 @@ const SubscriptionsTab = () => {
 
         try {
             const params = new URLSearchParams({
-                action: 'generate_test_subscriptions',
-                nonce: dataGenerator.subscriptionNonce,
-                ...formData
+                action: 'generate_test_donations',
+                nonce: dataGenerator.nonce,
+                ...Object.fromEntries(Object.entries(formData).map(([key, value]) => [key, String(value)]))
             });
 
             const response = await fetch(dataGenerator.ajaxUrl, {
@@ -92,7 +130,7 @@ const SubscriptionsTab = () => {
                 body: params
             });
 
-            const data = await response.json();
+            const data: ApiResponse = await response.json();
 
             setResult({
                 success: data.success,
@@ -102,14 +140,14 @@ const SubscriptionsTab = () => {
             console.error('Form submission error:', error);
             setResult({
                 success: false,
-                message: error.message || 'An error occurred'
+                message: error instanceof Error ? error.message : 'An error occurred'
             });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleFieldChange = (field, value) => {
+    const handleFieldChange = (field: keyof DonationFormData, value: DonationFormData[keyof DonationFormData]): void => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -126,11 +164,11 @@ const SubscriptionsTab = () => {
                                 <td>
                                     <SelectControl
                                         value={formData.campaign_id}
-                                        onChange={(value) => handleFieldChange('campaign_id', value)}
+                                        onChange={(value: string) => handleFieldChange('campaign_id', value)}
                                         options={campaignOptions}
                                     />
                                     <p className="description">
-                                        {__('Choose which campaign the test subscriptions should be associated with.', 'give-data-generator')}
+                                        {__('Choose which campaign the test donations should be associated with.', 'give-data-generator')}
                                     </p>
                                     {isCampaignsResolved && campaigns.length === 0 && (
                                         <p className="description" style={{ color: '#d63638' }}>
@@ -142,18 +180,62 @@ const SubscriptionsTab = () => {
 
                             <tr>
                                 <th scope="row">
-                                    <label>{__('Number of Subscriptions', 'give-data-generator')}</label>
+                                    <label>{__('Donor Selection', 'give-data-generator')}</label>
+                                </th>
+                                <td>
+                                    <SelectControl
+                                        value={formData.donor_creation_method}
+                                        onChange={(value: string) => handleFieldChange('donor_creation_method', value)}
+                                        options={[
+                                            { label: __('Create New Donors', 'give-data-generator'), value: 'create_new' },
+                                            { label: __('Use Existing Donors', 'give-data-generator'), value: 'use_existing' },
+                                            { label: __('Mix of New and Existing', 'give-data-generator'), value: 'mixed' },
+                                            { label: __('Select Specific Donor', 'give-data-generator'), value: 'select_specific' }
+                                        ]}
+                                    />
+                                    <p className="description">
+                                        {__('Choose whether to create new donors for each donation or use existing donors from your database.', 'give-data-generator')}
+                                    </p>
+                                </td>
+                            </tr>
+
+                            {formData.donor_creation_method === 'select_specific' && (
+                                <tr>
+                                    <th scope="row">
+                                        <label>{__('Select Donor', 'give-data-generator')}</label>
+                                    </th>
+                                    <td>
+                                        <SelectControl
+                                            value={formData.selected_donor_id}
+                                            onChange={(value: string) => handleFieldChange('selected_donor_id', value)}
+                                            options={donorOptions}
+                                        />
+                                        <p className="description">
+                                            {__('Select a specific donor to use for all generated donations.', 'give-data-generator')}
+                                        </p>
+                                        {donors.length === 0 && (
+                                            <p className="description" style={{ color: '#d63638' }}>
+                                                {__('No existing donors found. Please select a different donor creation method.', 'give-data-generator')}
+                                            </p>
+                                        )}
+                                    </td>
+                                </tr>
+                            )}
+
+                            <tr>
+                                <th scope="row">
+                                    <label>{__('Number of Donations', 'give-data-generator')}</label>
                                 </th>
                                 <td>
                                     <TextControl
                                         type="number"
-                                        value={formData.subscription_count}
-                                        onChange={(value) => handleFieldChange('subscription_count', parseInt(value) || 1)}
+                                        value={formData.donation_count}
+                                        onChange={(value: string) => handleFieldChange('donation_count', parseInt(value) || 1)}
                                         min={1}
                                         max={1000}
                                     />
                                     <p className="description">
-                                        {__('How many test subscriptions to generate (1-1000).', 'give-data-generator')}
+                                        {__('How many test donations to generate (1-1000).', 'give-data-generator')}
                                     </p>
                                 </td>
                             </tr>
@@ -165,16 +247,16 @@ const SubscriptionsTab = () => {
                                 <td>
                                     <SelectControl
                                         value={formData.date_range}
-                                        onChange={(value) => handleFieldChange('date_range', value)}
+                                        onChange={(value: string) => handleFieldChange('date_range', value)}
                                         options={[
                                             { label: __('Last 30 Days', 'give-data-generator'), value: 'last_30_days' },
                                             { label: __('Last 90 Days', 'give-data-generator'), value: 'last_90_days' },
                                             { label: __('Last Year', 'give-data-generator'), value: 'last_year' },
-                                            { label: __('Custom Range', 'give-data-generator'), value: 'custom' }
+                                            { label: __('Custom Date Range', 'give-data-generator'), value: 'custom' }
                                         ]}
                                     />
                                     <p className="description">
-                                        {__('Timeframe within which subscriptions should be created.', 'give-data-generator')}
+                                        {__('Timeframe within which donations should be created.', 'give-data-generator')}
                                     </p>
                                 </td>
                             </tr>
@@ -190,7 +272,7 @@ const SubscriptionsTab = () => {
                                                 <TextControl
                                                     type="date"
                                                     value={formData.start_date}
-                                                    onChange={(value) => handleFieldChange('start_date', value)}
+                                                    onChange={(value: string) => handleFieldChange('start_date', value)}
                                                 />
                                             </FlexItem>
                                             <FlexItem>
@@ -200,12 +282,12 @@ const SubscriptionsTab = () => {
                                                 <TextControl
                                                     type="date"
                                                     value={formData.end_date}
-                                                    onChange={(value) => handleFieldChange('end_date', value)}
+                                                    onChange={(value: string) => handleFieldChange('end_date', value)}
                                                 />
                                             </FlexItem>
                                         </Flex>
                                         <p className="description">
-                                            {__('Select the start and end dates for the subscription generation.', 'give-data-generator')}
+                                            {__('Select the start and end dates for the donation generation.', 'give-data-generator')}
                                         </p>
                                     </td>
                                 </tr>
@@ -213,123 +295,46 @@ const SubscriptionsTab = () => {
 
                             <tr>
                                 <th scope="row">
-                                    <label>{__('Subscription Mode', 'give-data-generator')}</label>
+                                    <label>{__('Donation Mode', 'give-data-generator')}</label>
                                 </th>
                                 <td>
                                     <SelectControl
-                                        value={formData.subscription_mode}
-                                        onChange={(value) => handleFieldChange('subscription_mode', value)}
+                                        value={formData.donation_mode}
+                                        onChange={(value: string) => handleFieldChange('donation_mode', value)}
                                         options={[
                                             { label: __('Test Mode', 'give-data-generator'), value: 'test' },
                                             { label: __('Live Mode', 'give-data-generator'), value: 'live' }
                                         ]}
                                     />
                                     <p className="description">
-                                        {__('Choose whether subscriptions should be created in test or live mode.', 'give-data-generator')}
+                                        {__('Choose whether donations should be created in test or live mode.', 'give-data-generator')}
                                     </p>
                                 </td>
                             </tr>
 
                             <tr>
                                 <th scope="row">
-                                    <label>{__('Subscription Status', 'give-data-generator')}</label>
+                                    <label>{__('Donation Status', 'give-data-generator')}</label>
                                 </th>
                                 <td>
                                     <SelectControl
-                                        value={formData.subscription_status}
-                                        onChange={(value) => handleFieldChange('subscription_status', value)}
+                                        value={formData.donation_status}
+                                        onChange={(value: string) => handleFieldChange('donation_status', value)}
                                         options={[
+                                            { label: __('Complete', 'give-data-generator'), value: 'complete' },
                                             { label: __('Pending', 'give-data-generator'), value: 'pending' },
-                                            { label: __('Active', 'give-data-generator'), value: 'active' },
-                                            { label: __('Expired', 'give-data-generator'), value: 'expired' },
-                                            { label: __('Completed', 'give-data-generator'), value: 'completed' },
-                                            { label: __('Refunded', 'give-data-generator'), value: 'refunded' },
-                                            { label: __('Failing', 'give-data-generator'), value: 'failing' },
+                                            { label: __('Processing', 'give-data-generator'), value: 'processing' },
+                                            { label: __('Failed', 'give-data-generator'), value: 'failed' },
                                             { label: __('Cancelled', 'give-data-generator'), value: 'cancelled' },
+                                            { label: __('Refunded', 'give-data-generator'), value: 'refunded' },
                                             { label: __('Abandoned', 'give-data-generator'), value: 'abandoned' },
-                                            { label: __('Suspended', 'give-data-generator'), value: 'suspended' },
-                                            { label: __('Paused', 'give-data-generator'), value: 'paused' },
-                                            { label: __('Random', 'give-data-generator'), value: 'random' }
+                                            { label: __('Preapproval', 'give-data-generator'), value: 'preapproval' },
+                                            { label: __('Revoked', 'give-data-generator'), value: 'revoked' },
+                                            { label: __('Random Status', 'give-data-generator'), value: 'random' }
                                         ]}
                                     />
                                     <p className="description">
-                                        {__('Status for the generated subscriptions. Select "Random" to use a mix of statuses.', 'give-data-generator')}
-                                    </p>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <th scope="row">
-                                    <label>{__('Billing Period', 'give-data-generator')}</label>
-                                </th>
-                                <td>
-                                    <SelectControl
-                                        value={formData.subscription_period}
-                                        onChange={(value) => handleFieldChange('subscription_period', value)}
-                                        options={[
-                                            { label: __('Daily', 'give-data-generator'), value: 'day' },
-                                            { label: __('Weekly', 'give-data-generator'), value: 'week' },
-                                            { label: __('Monthly', 'give-data-generator'), value: 'month' },
-                                            { label: __('Quarterly', 'give-data-generator'), value: 'quarter' },
-                                            { label: __('Yearly', 'give-data-generator'), value: 'year' }
-                                        ]}
-                                    />
-                                    <p className="description">
-                                        {__('The billing period for subscriptions.', 'give-data-generator')}
-                                    </p>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <th scope="row">
-                                    <label>{__('Frequency', 'give-data-generator')}</label>
-                                </th>
-                                <td>
-                                    <TextControl
-                                        type="number"
-                                        value={formData.frequency}
-                                        onChange={(value) => handleFieldChange('frequency', parseInt(value) || 1)}
-                                        min={1}
-                                        max={12}
-                                    />
-                                    <p className="description">
-                                        {__('How often the subscription should bill within the period (e.g., every 2 months = frequency 2 with monthly period).', 'give-data-generator')}
-                                    </p>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <th scope="row">
-                                    <label>{__('Installments', 'give-data-generator')}</label>
-                                </th>
-                                <td>
-                                    <TextControl
-                                        type="number"
-                                        value={formData.installments}
-                                        onChange={(value) => handleFieldChange('installments', parseInt(value) || 0)}
-                                        min={0}
-                                        max={100}
-                                    />
-                                    <p className="description">
-                                        {__('Total number of payments before subscription ends. Set to 0 for unlimited/indefinite subscriptions.', 'give-data-generator')}
-                                    </p>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <th scope="row">
-                                    <label>{__('Renewals per Subscription', 'give-data-generator')}</label>
-                                </th>
-                                <td>
-                                    <TextControl
-                                        type="number"
-                                        value={formData.renewals_count}
-                                        onChange={(value) => handleFieldChange('renewals_count', parseInt(value) || 0)}
-                                        min={0}
-                                        max={50}
-                                    />
-                                    <p className="description">
-                                        {__('Number of renewal payments to generate for each subscription (0-50). This creates historical renewal data.', 'give-data-generator')}
+                                        {__('Status for the generated donations. Select "Random" to use a mix of statuses.', 'give-data-generator')}
                                     </p>
                                 </td>
                             </tr>
@@ -341,13 +346,13 @@ const SubscriptionsTab = () => {
                             type="submit"
                             variant="primary"
                             isBusy={isSubmitting}
-                            disabled={!formData.campaign_id || isSubmitting || campaigns.length === 0}
+                            disabled={!formData.campaign_id || isSubmitting || (isCampaignsResolved && campaigns.length === 0)}
                         >
                             {isSubmitting
                                 ? __('Generating...', 'give-data-generator')
-                                : campaigns.length === 0
+                                : (isCampaignsResolved && campaigns.length === 0)
                                     ? __('No Campaigns Available', 'give-data-generator')
-                                    : __('Generate Test Subscriptions', 'give-data-generator')
+                                    : __('Generate Test Data', 'give-data-generator')
                             }
                         </Button>
                     </p>
@@ -367,4 +372,4 @@ const SubscriptionsTab = () => {
     );
 };
 
-export default SubscriptionsTab;
+export default DonationsTab;

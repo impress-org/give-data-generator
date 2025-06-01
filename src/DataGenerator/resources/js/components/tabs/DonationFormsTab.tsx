@@ -1,4 +1,4 @@
-import { useState, useEffect } from '@wordpress/element';
+import React, { useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import {
     Button,
@@ -11,11 +11,31 @@ import {
     Flex,
     FlexItem
 } from '@wordpress/components';
-import {useEntityRecords} from '@wordpress/core-data';
+import { useEntityRecords } from '@wordpress/core-data';
+import { ApiResponse, ResultState, Campaign } from '../../types';
+import dataGenerator from '../../common/getWindowData';
 
-const DonationFormsTab = () => {
-    const [campaigns, setCampaigns] = useState([]);
-    const {hasResolved: isCampaignsResolved, records: campaignRecords} = useEntityRecords('givewp', 'campaign', {
+interface DonationFormFormData {
+    campaign_id: string;
+    form_count: number;
+    form_status: 'private' | 'published' | 'draft';
+    enable_goals: boolean;
+    goal_type: 'amount' | 'campaign' | 'donations' | 'donors';
+    goal_amount_min: number;
+    goal_amount_max: number;
+    random_designs: boolean;
+    inherit_campaign_colors: boolean;
+    form_title_prefix: string;
+}
+
+interface SelectOption {
+    label: string;
+    value: string;
+}
+
+const DonationFormsTab: React.FC = () => {
+    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    const { hasResolved: isCampaignsResolved, records: campaignRecords } = useEntityRecords('givewp', 'campaign', {
         status: ['active'],
         per_page: 100,
         orderby: 'date',
@@ -24,11 +44,11 @@ const DonationFormsTab = () => {
 
     useEffect(() => {
         if (isCampaignsResolved && campaignRecords !== null) {
-            setCampaigns(campaignRecords);
+            setCampaigns(campaignRecords as Campaign[]);
         }
     }, [campaignRecords, isCampaignsResolved]);
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<DonationFormFormData>({
         campaign_id: '',
         form_count: 3,
         form_status: 'published',
@@ -41,21 +61,21 @@ const DonationFormsTab = () => {
         form_title_prefix: ''
     });
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [result, setResult] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [result, setResult] = useState<ResultState | null>(null);
 
     // Prepare campaign options for SelectControl
-    const campaignOptions = !isCampaignsResolved ? [
+    const campaignOptions: SelectOption[] = !isCampaignsResolved ? [
         { label: __('Loading campaigns...', 'give-data-generator'), value: '' },
     ] : [
         { label: __('Select a Campaign', 'give-data-generator'), value: '' },
-        ...campaigns.map(campaign => ({
+        ...campaigns.map((campaign: Campaign) => ({
             label: campaign.title,
             value: campaign.id
         }))
     ];
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
 
         if (!formData.campaign_id) {
@@ -73,7 +93,7 @@ const DonationFormsTab = () => {
             const params = new URLSearchParams({
                 action: 'generate_test_donation_forms',
                 nonce: dataGenerator.donationFormNonce,
-                ...formData
+                ...Object.fromEntries(Object.entries(formData).map(([key, value]) => [key, String(value)]))
             });
 
             const response = await fetch(dataGenerator.ajaxUrl, {
@@ -84,7 +104,7 @@ const DonationFormsTab = () => {
                 body: params
             });
 
-            const data = await response.json();
+            const data: ApiResponse = await response.json();
 
             setResult({
                 success: data.success,
@@ -94,14 +114,14 @@ const DonationFormsTab = () => {
             console.error('Form submission error:', error);
             setResult({
                 success: false,
-                message: error.message || 'An error occurred'
+                message: error instanceof Error ? error.message : 'An error occurred'
             });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleFieldChange = (field, value) => {
+    const handleFieldChange = (field: keyof DonationFormFormData, value: DonationFormFormData[keyof DonationFormFormData]): void => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -118,7 +138,7 @@ const DonationFormsTab = () => {
                                 <td>
                                     <SelectControl
                                         value={formData.campaign_id}
-                                        onChange={(value) => handleFieldChange('campaign_id', value)}
+                                        onChange={(value: string) => handleFieldChange('campaign_id', value)}
                                         options={campaignOptions}
                                     />
                                     <p className="description">
@@ -140,7 +160,7 @@ const DonationFormsTab = () => {
                                     <TextControl
                                         type="number"
                                         value={formData.form_count}
-                                        onChange={(value) => handleFieldChange('form_count', parseInt(value) || 1)}
+                                        onChange={(value: string) => handleFieldChange('form_count', parseInt(value) || 1)}
                                         min={1}
                                         max={20}
                                     />
@@ -157,7 +177,7 @@ const DonationFormsTab = () => {
                                 <td>
                                     <SelectControl
                                         value={formData.form_status}
-                                        onChange={(value) => handleFieldChange('form_status', value)}
+                                        onChange={(value: string) => handleFieldChange('form_status', value)}
                                         options={[
                                             { label: __('Published', 'give-data-generator'), value: 'published' },
                                             { label: __('Draft', 'give-data-generator'), value: 'draft' },
@@ -177,7 +197,7 @@ const DonationFormsTab = () => {
                                 <td>
                                     <CheckboxControl
                                         checked={formData.enable_goals}
-                                        onChange={(value) => handleFieldChange('enable_goals', value)}
+                                        onChange={(value: boolean) => handleFieldChange('enable_goals', value)}
                                         label={__('Enable donation goals for generated forms', 'give-data-generator')}
                                     />
                                     <p className="description">
@@ -195,10 +215,10 @@ const DonationFormsTab = () => {
                                         <td>
                                             <SelectControl
                                                 value={formData.goal_type}
-                                                onChange={(value) => handleFieldChange('goal_type', value)}
+                                                onChange={(value: string) => handleFieldChange('goal_type', value)}
                                                 options={[
                                                     { label: __('Inherit from Campaign', 'give-data-generator'), value: 'campaign' },
-                                                    { label: __('Custom Amount', 'give-data-generator'), value: 'amount' },
+                                                    { label: __('Amount', 'give-data-generator'), value: 'amount' },
                                                     { label: __('Number of Donations', 'give-data-generator'), value: 'donations' },
                                                     { label: __('Number of Donors', 'give-data-generator'), value: 'donors' }
                                                 ]}
@@ -220,7 +240,7 @@ const DonationFormsTab = () => {
                                                         <TextControl
                                                             type="number"
                                                             value={formData.goal_amount_min}
-                                                            onChange={(value) => handleFieldChange('goal_amount_min', parseInt(value) || 0)}
+                                                            onChange={(value: string) => handleFieldChange('goal_amount_min', parseInt(value) || 0)}
                                                             min={100}
                                                         />
                                                     </FlexItem>
@@ -231,7 +251,7 @@ const DonationFormsTab = () => {
                                                         <TextControl
                                                             type="number"
                                                             value={formData.goal_amount_max}
-                                                            onChange={(value) => handleFieldChange('goal_amount_max', parseInt(value) || 0)}
+                                                            onChange={(value: string) => handleFieldChange('goal_amount_max', parseInt(value) || 0)}
                                                             min={100}
                                                         />
                                                     </FlexItem>
@@ -252,7 +272,7 @@ const DonationFormsTab = () => {
                                 <td>
                                     <CheckboxControl
                                         checked={formData.random_designs}
-                                        onChange={(value) => handleFieldChange('random_designs', value)}
+                                        onChange={(value: boolean) => handleFieldChange('random_designs', value)}
                                         label={__('Use random form designs', 'give-data-generator')}
                                     />
                                     <p className="description" style={{ marginTop: '5px', marginBottom: '10px' }}>
@@ -261,7 +281,7 @@ const DonationFormsTab = () => {
 
                                     <CheckboxControl
                                         checked={formData.inherit_campaign_colors}
-                                        onChange={(value) => handleFieldChange('inherit_campaign_colors', value)}
+                                        onChange={(value: boolean) => handleFieldChange('inherit_campaign_colors', value)}
                                         label={__('Inherit colors from campaign', 'give-data-generator')}
                                     />
                                     <p className="description" style={{ marginTop: '5px' }}>
@@ -277,7 +297,7 @@ const DonationFormsTab = () => {
                                 <td>
                                     <TextControl
                                         value={formData.form_title_prefix}
-                                        onChange={(value) => handleFieldChange('form_title_prefix', value)}
+                                        onChange={(value: string) => handleFieldChange('form_title_prefix', value)}
                                         placeholder={__('e.g., Test Form', 'give-data-generator')}
                                     />
                                     <p className="description">

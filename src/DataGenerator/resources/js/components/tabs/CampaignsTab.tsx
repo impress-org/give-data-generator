@@ -1,4 +1,4 @@
-import { useState } from '@wordpress/element';
+import React, { useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import {
     Button,
@@ -12,11 +12,28 @@ import {
     FlexItem
 } from '@wordpress/components';
 import { useDispatch } from '@wordpress/data';
+import { ApiResponse, ResultState } from '../../types';
+import dataGenerator from '../../common/getWindowData';
 
-const CampaignsTab = () => {
+interface CampaignFormData {
+    campaign_count: number;
+    campaign_status: 'active' | 'inactive' | 'pending' | 'draft' | 'archived';
+    goal_type: 'amount' | 'donations' | 'donors' | 'amountFromSubscriptions' | 'subscriptions' | 'donorsFromSubscriptions';
+    goal_amount_min: number;
+    goal_amount_max: number;
+    color_scheme: 'random' | 'blue_theme' | 'green_theme' | 'red_theme' | 'purple_theme' | 'orange_theme';
+    include_short_desc: boolean;
+    include_long_desc: boolean;
+    campaign_duration: 'ongoing' | '30_days' | '60_days' | '90_days' | '6_months' | '1_year';
+    create_forms: boolean;
+    campaign_title_prefix: string;
+    image_source: 'none' | 'random' | 'lorem_picsum' | 'openverse';
+}
+
+const CampaignsTab: React.FC = () => {
     const { invalidateResolution, invalidateResolutionForStore } = useDispatch('core');
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<CampaignFormData>({
         campaign_count: 5,
         campaign_status: 'active',
         goal_type: 'amount',
@@ -31,10 +48,10 @@ const CampaignsTab = () => {
         image_source: 'lorem_picsum'
     });
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [result, setResult] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [result, setResult] = useState<ResultState | null>(null);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
 
         setIsSubmitting(true);
@@ -44,7 +61,7 @@ const CampaignsTab = () => {
             const params = new URLSearchParams({
                 action: 'generate_test_campaigns',
                 nonce: dataGenerator.campaignNonce,
-                ...formData
+                ...Object.fromEntries(Object.entries(formData).map(([key, value]) => [key, String(value)]))
             });
 
             const response = await fetch(dataGenerator.ajaxUrl, {
@@ -55,7 +72,7 @@ const CampaignsTab = () => {
                 body: params
             });
 
-            const data = await response.json();
+            const data: ApiResponse = await response.json();
 
             setResult({
                 success: data.success,
@@ -81,14 +98,14 @@ const CampaignsTab = () => {
             console.error('Form submission error:', error);
             setResult({
                 success: false,
-                message: error.message || 'An error occurred'
+                message: error instanceof Error ? error.message : 'An error occurred'
             });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleFieldChange = (field, value) => {
+    const handleFieldChange = (field: keyof CampaignFormData, value: CampaignFormData[keyof CampaignFormData]): void => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -106,7 +123,7 @@ const CampaignsTab = () => {
                                     <TextControl
                                         type="number"
                                         value={formData.campaign_count}
-                                        onChange={(value) => handleFieldChange('campaign_count', parseInt(value) || 1)}
+                                        onChange={(value: string) => handleFieldChange('campaign_count', parseInt(value) || 1)}
                                         min={1}
                                         max={50}
                                     />
@@ -123,7 +140,7 @@ const CampaignsTab = () => {
                                 <td>
                                     <SelectControl
                                         value={formData.campaign_status}
-                                        onChange={(value) => handleFieldChange('campaign_status', value)}
+                                        onChange={(value: string) => handleFieldChange('campaign_status', value)}
                                         options={[
                                             { label: __('Active', 'give-data-generator'), value: 'active' },
                                             { label: __('Draft', 'give-data-generator'), value: 'draft' },
@@ -145,7 +162,7 @@ const CampaignsTab = () => {
                                 <td>
                                     <SelectControl
                                         value={formData.goal_type}
-                                        onChange={(value) => handleFieldChange('goal_type', value)}
+                                        onChange={(value: string) => handleFieldChange('goal_type', value)}
                                         options={[
                                             { label: __('Amount', 'give-data-generator'), value: 'amount' },
                                             { label: __('Number of Donations', 'give-data-generator'), value: 'donations' },
@@ -171,7 +188,7 @@ const CampaignsTab = () => {
                                             <TextControl
                                                 type="number"
                                                 value={formData.goal_amount_min}
-                                                onChange={(value) => handleFieldChange('goal_amount_min', parseInt(value) || 100)}
+                                                onChange={(value: string) => handleFieldChange('goal_amount_min', parseInt(value) || 100)}
                                                 min={100}
                                             />
                                         </FlexItem>
@@ -182,7 +199,7 @@ const CampaignsTab = () => {
                                             <TextControl
                                                 type="number"
                                                 value={formData.goal_amount_max}
-                                                onChange={(value) => handleFieldChange('goal_amount_max', parseInt(value) || 100)}
+                                                onChange={(value: string) => handleFieldChange('goal_amount_max', parseInt(value) || 100)}
                                                 min={100}
                                             />
                                         </FlexItem>
@@ -200,7 +217,7 @@ const CampaignsTab = () => {
                                 <td>
                                     <SelectControl
                                         value={formData.color_scheme}
-                                        onChange={(value) => handleFieldChange('color_scheme', value)}
+                                        onChange={(value: string) => handleFieldChange('color_scheme', value)}
                                         options={[
                                             { label: __('Random Colors', 'give-data-generator'), value: 'random' },
                                             { label: __('Blue Theme', 'give-data-generator'), value: 'blue_theme' },
@@ -223,7 +240,7 @@ const CampaignsTab = () => {
                                 <td>
                                     <CheckboxControl
                                         checked={formData.include_short_desc}
-                                        onChange={(value) => handleFieldChange('include_short_desc', value)}
+                                        onChange={(value: boolean) => handleFieldChange('include_short_desc', value)}
                                         label={__('Generate short descriptions', 'give-data-generator')}
                                     />
                                     <p className="description" style={{ marginTop: '5px', marginBottom: '10px' }}>
@@ -232,7 +249,7 @@ const CampaignsTab = () => {
 
                                     <CheckboxControl
                                         checked={formData.include_long_desc}
-                                        onChange={(value) => handleFieldChange('include_long_desc', value)}
+                                        onChange={(value: boolean) => handleFieldChange('include_long_desc', value)}
                                         label={__('Generate long descriptions', 'give-data-generator')}
                                     />
                                     <p className="description" style={{ marginTop: '5px' }}>
@@ -248,7 +265,7 @@ const CampaignsTab = () => {
                                 <td>
                                     <SelectControl
                                         value={formData.campaign_duration}
-                                        onChange={(value) => handleFieldChange('campaign_duration', value)}
+                                        onChange={(value: string) => handleFieldChange('campaign_duration', value)}
                                         options={[
                                             { label: __('Ongoing (No End Date)', 'give-data-generator'), value: 'ongoing' },
                                             { label: __('30 Days', 'give-data-generator'), value: '30_days' },
@@ -271,7 +288,7 @@ const CampaignsTab = () => {
                                 <td>
                                     <CheckboxControl
                                         checked={formData.create_forms}
-                                        onChange={(value) => handleFieldChange('create_forms', value)}
+                                        onChange={(value: boolean) => handleFieldChange('create_forms', value)}
                                         label={__('Create default donation forms for each campaign', 'give-data-generator')}
                                     />
                                     <p className="description">
@@ -287,7 +304,7 @@ const CampaignsTab = () => {
                                 <td>
                                     <TextControl
                                         value={formData.campaign_title_prefix}
-                                        onChange={(value) => handleFieldChange('campaign_title_prefix', value)}
+                                        onChange={(value: string) => handleFieldChange('campaign_title_prefix', value)}
                                         placeholder={__('e.g., Test Campaign', 'give-data-generator')}
                                     />
                                     <p className="description">
@@ -303,7 +320,7 @@ const CampaignsTab = () => {
                                 <td>
                                     <SelectControl
                                         value={formData.image_source}
-                                        onChange={(value) => handleFieldChange('image_source', value)}
+                                        onChange={(value: string) => handleFieldChange('image_source', value)}
                                         options={[
                                             { label: __('Lorem Picsum (Random)', 'give-data-generator'), value: 'lorem_picsum' },
                                             { label: __('Openverse (Open Licensed)', 'give-data-generator'), value: 'openverse' },
