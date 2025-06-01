@@ -353,7 +353,7 @@ class TestCleanUpManager extends TestCase
         $this->assertEquals(3, $generatedDonations);
 
         // Verify test donations exist
-        $testDonations = Donation::query()->where('mode', DonationMode::TEST())->getAll();
+        $testDonations = Donation::query()->where('mode', DonationMode::TEST()->getValue())->getAll();
         $this->assertCount(3, $testDonations);
 
         // Clean up test donations
@@ -361,7 +361,7 @@ class TestCleanUpManager extends TestCase
         $this->assertEquals(3, $result['deleted_count']);
 
         // Verify they're gone
-        $remainingTestDonations = Donation::query()->where('mode', DonationMode::TEST())->getAll();
+        $remainingTestDonations = Donation::query()->where('mode', DonationMode::TEST()->getValue())->getAll();
         $this->assertEmpty($remainingTestDonations);
     }
 

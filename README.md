@@ -1,10 +1,13 @@
 # GiveWP - Data Generator
 
-A WordPress plugin that generates test data for GiveWP including donations, donors, and more. This add-on is designed for testing and development purposes only.
+A WordPress plugin that generates test data for GiveWP including donations, donors, campaigns, donation forms, and more. This add-on is designed for testing and development purposes only.
 
 ## Features
 
-- Generate test donations using the GiveWP Donation Model
+- **Generate test campaigns** with customizable goals, colors, and descriptions
+- **Generate test donations** using the GiveWP Donation Model
+- **Generate test donation forms** for specific campaigns with various designs and settings
+- **Generate test subscriptions** with different billing periods and statuses
 - Generate test donor data with realistic information
 - Choose between creating new donors, using existing donors, or a mix of both
 - Select specific campaigns for donation generation
@@ -12,6 +15,7 @@ A WordPress plugin that generates test data for GiveWP including donations, dono
 - Set custom date ranges for when donations should be created
 - Automatically creates realistic test donor data
 - Generates random donation amounts, billing addresses, and other donation details
+- **Clean up tools** to remove test data when needed
 
 ## Installation
 
@@ -22,6 +26,15 @@ A WordPress plugin that generates test data for GiveWP including donations, dono
 
 ## Usage
 
+### Campaigns Tab
+Generate test campaigns with:
+- Customizable goal types (amount, donations, donors, subscriptions)
+- Random color schemes or themed colors
+- Campaign descriptions and images
+- Various campaign durations
+- Automatic form creation
+
+### Donations Tab
 1. Go to **Donations > Data Generator** in your WordPress admin
 2. Select a campaign from the dropdown
 3. Choose your donor creation method:
@@ -38,6 +51,36 @@ A WordPress plugin that generates test data for GiveWP including donations, dono
    - Custom Range (specify start and end dates)
 7. Click "Generate Test Data"
 
+### Donation Forms Tab
+Generate test donation forms for specific campaigns with:
+- **Campaign Selection** - Choose which campaign to associate forms with
+- **Form Count** - Generate 1-20 forms per campaign
+- **Form Status** - Published, Draft, or Private
+- **Goal Settings** - Enable/disable goals with various types:
+  - Inherit from Campaign
+  - Custom Amount
+  - Number of Donations
+  - Number of Donors
+- **Form Designs** - Randomly assign or use specific designs:
+  - Multi-step Form Design
+  - Classic Form Design
+  - Two Panel Form Design
+- **Campaign Colors** - Inherit primary/secondary colors from campaign
+- **Title Prefix** - Optional custom prefix for form titles
+
+### Subscriptions Tab
+Generate test subscriptions with:
+- Various billing periods (daily, weekly, monthly, quarterly, yearly)
+- Different subscription statuses
+- Custom frequency and installment settings
+- Renewal payment generation
+
+### Clean Up Tab
+Remove test data with:
+- Delete all test mode donations
+- Delete all test mode subscriptions
+- Archive all active campaigns
+
 ## Requirements
 
 - WordPress 4.9+
@@ -49,12 +92,16 @@ A WordPress plugin that generates test data for GiveWP including donations, dono
 This add-on follows the GiveWP domain-driven architecture with:
 
 - `src/Addon/` - Plugin activation, environment checks, and WordPress integration
-- `src/TestDonationGenerator/` - Main business logic for generating test donations
+- `src/DataGenerator/` - Main business logic for generating test data
 
 ### Key Classes
 
 - `AdminSettings` - Handles the admin interface and form rendering
 - `DonationGenerator` - Core logic for creating test donations and donors
+- `CampaignGenerator` - Logic for creating test campaigns
+- `DonationFormGenerator` - Logic for creating test donation forms for campaigns
+- `SubscriptionGenerator` - Logic for creating test subscriptions
+- `CleanUpManager` - Handles removal of test data
 - `ServiceProvider` - Registers services and hooks with GiveWP
 
 ## Generated Data

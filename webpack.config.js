@@ -14,7 +14,11 @@ const defaultConfig = require('@wordpress/scripts/config/webpack.config.js');
 module.exports = {
     ...defaultConfig,
     entry: {
-        admin: srcPath('DataGenerator/resources/js/admin.js'),
+        admin: srcPath('DataGenerator/resources/js/admin.jsx')
+    },
+    resolve: {
+        ...defaultConfig.resolve,
+        extensions: ['.js', '.jsx', '.ts', '.tsx'],
     },
 };
 

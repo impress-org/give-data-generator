@@ -1,0 +1,200 @@
+/**
+ * Data Generator React Admin Styles
+ *
+ * @package     GiveDataGenerator\DataGenerator
+ * @since       1.0.0
+ */
+
+/* Main container with sidebar layout */
+.data-generator-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-top: 20px;
+    align-items: flex-start;
+
+    /* Tab navigation sidebar - clean minimal style like Gutenberg */
+    .components-tab-panel__tabs {
+        min-width: 220px;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        box-shadow: none;
+        flex-direction: column !important;
+        display: flex !important;
+
+        /* Individual tab buttons - clean navigation list style */
+        .components-tab-panel__tabs-item {
+            padding: 8px 16px;
+            border: none;
+            border-bottom: none;
+            margin: 0;
+            text-align: left;
+            justify-content: flex-start;
+            border-radius: 2px;
+            color: #1e1e1e;
+            font-weight: 400;
+            font-size: 13px;
+            background: transparent;
+            border-left: 4px solid transparent;
+            transition: all 0.15s ease-in-out;
+            position: relative;
+
+            /* Remove any pseudo-element borders */
+            &::before,
+            &::after {
+                display: none !important;
+                border: none !important;
+                border-bottom: none !important;
+            }
+
+            &:first-child,
+            &:last-child {
+                border-radius: 2px;
+            }
+
+            &:hover {
+                background: rgba(0, 0, 0, 0.05);
+                color: #1e1e1e;
+            }
+
+            /* Active tab styling - minimal with left accent */
+            &[aria-selected="true"],
+            &.is-active {
+                background: rgba(56, 88, 233, 0.04);
+                color: #1e1e1e;
+                font-weight: 500;
+                border-left: 4px solid #3858e9;
+
+                /* Ensure no pseudo-element borders on active state */
+                &::before,
+                &::after {
+                    display: none !important;
+                    border: none !important;
+                    border-bottom: none !important;
+                }
+            }
+        }
+    }
+
+    /* Tab content area - clean with subtle border */
+    .components-tab-panel {
+        flex: 1;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 2px;
+        margin-left: 1px;
+        box-shadow: none;
+        padding: 0;
+
+        /* Content inside tab panels */
+        .components-tab-panel__tab-content {
+            padding: 24px;
+            min-height: 300px;
+        }
+    }
+
+    /* Better integration with WordPress admin form tables */
+    .form-table {
+        margin-top: 0;
+
+        th {
+            width: 200px;
+            padding: 20px 10px 20px 0;
+        }
+
+        td {
+            padding: 15px 10px;
+            line-height: 1.3;
+        }
+    }
+
+    /* WordPress components adjustments for admin context */
+    .components-select-control__input,
+    .components-text-control__input {
+        min-height: 30px;
+    }
+
+    /* Notice components styling */
+    .components-notice {
+        margin: 16px 0;
+    }
+
+    /* Button spacing */
+    .components-button.is-primary {
+        margin-top: 4px;
+    }
+
+    /* Card component adjustments */
+    .components-card {
+        box-shadow: none;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 16px;
+
+        .components-card__body {
+            padding: 16px;
+        }
+    }
+
+    /* Form description text styling to match WordPress admin */
+    .description {
+        color: #646970;
+        font-style: normal;
+        margin-top: 5px;
+        margin-bottom: 0;
+    }
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 782px) {
+    .data-generator-tabs {
+        flex-direction: column;
+        gap: 16px;
+
+        .components-tab-panel__tabs {
+            min-width: auto;
+            width: 100%;
+            flex-direction: row !important;
+            overflow-x: auto;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 8px;
+
+            .components-tab-panel__tabs-item {
+                white-space: nowrap;
+                border-left: 4px solid transparent;
+                margin-right: 8px;
+
+                /* Remove any pseudo-element borders on mobile */
+                &::before,
+                &::after {
+                    display: none !important;
+                    border: none !important;
+                    border-bottom: none !important;
+                }
+
+                &:last-child {
+                    margin-right: 0;
+                }
+
+                /* Active tab styling for mobile - left accent only */
+                &[aria-selected="true"],
+                &.is-active {
+                    border-left: 4px solid #3858e9;
+                    background: rgba(56, 88, 233, 0.04);
+
+                    /* Ensure no pseudo-element borders on mobile active state */
+                    &::before,
+                    &::after {
+                        display: none !important;
+                        border: none !important;
+                        border-bottom: none !important;
+                    }
+                }
+            }
+        }
+
+        .components-tab-panel {
+            margin-left: 0;
+        }
+    }
+}

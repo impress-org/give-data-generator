@@ -183,7 +183,7 @@ class CleanUpManager
         try {
             // Get all active campaigns - try multiple approaches to ensure compatibility
             $campaigns = Campaign::query()
-                ->where('status', CampaignStatus::ACTIVE())
+                ->where('status', CampaignStatus::ACTIVE()->getValue())
                 ->getAll();
 
             // Fallback to string-based query if enum query doesn't work
