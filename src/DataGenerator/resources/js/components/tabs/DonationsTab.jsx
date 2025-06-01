@@ -1,4 +1,4 @@
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import {
     Button,
@@ -11,8 +11,24 @@ import {
     Flex,
     FlexItem
 } from '@wordpress/components';
+import {useEntityRecords} from '@wordpress/core-data';
 
 const DonationsTab = () => {
+    const [campaigns, setCampaigns] = useState([]);
+    const {hasResolved: isCampaignsResolved, records: campaignRecords} = useEntityRecords('givewp', 'campaign', {
+        status: ['active'],
+        per_page: 100,
+        orderby: 'date',
+        order: 'desc',
+    });
+
+    useEffect(() => {
+        if (isCampaignsResolved && campaignRecords !== null) {
+            setCampaigns(campaignRecords);
+        }
+    }, [campaignRecords, isCampaignsResolved]);
+
+
     const [formData, setFormData] = useState({
         campaign_id: '',
         donor_creation_method: 'create_new',
@@ -29,11 +45,12 @@ const DonationsTab = () => {
     const [result, setResult] = useState(null);
 
     // Get campaigns and donors from the global dataGenerator object
-    const campaigns = dataGenerator?.campaigns || [];
     const donors = dataGenerator?.donors || [];
 
     // Prepare campaign options for SelectControl
-    const campaignOptions = [
+    const campaignOptions = !isCampaignsResolved ? [
+        { label: __('Loading campaigns...', 'give-data-generator'), value: '' },
+    ] : [
         { label: __('Select a Campaign', 'give-data-generator'), value: '' },
         ...campaigns.map(campaign => ({
             label: campaign.title,
@@ -135,7 +152,7 @@ const DonationsTab = () => {
                                     <p className="description">
                                         {__('Choose which campaign the test donations should be associated with.', 'give-data-generator')}
                                     </p>
-                                    {campaigns.length === 0 && (
+                                    {isCampaignsResolved && campaigns.length === 0 && (
                                         <p className="description" style={{ color: '#d63638' }}>
                                             {__('No active campaigns found. Please create a campaign first.', 'give-data-generator')}
                                         </p>
@@ -311,11 +328,11 @@ const DonationsTab = () => {
                             type="submit"
                             variant="primary"
                             isBusy={isSubmitting}
-                            disabled={!formData.campaign_id || isSubmitting || campaigns.length === 0}
+                            disabled={!formData.campaign_id || isSubmitting || (isCampaignsResolved && campaigns.length === 0)}
                         >
                             {isSubmitting
                                 ? __('Generating...', 'give-data-generator')
-                                : campaigns.length === 0
+                                : (isCampaignsResolved && campaigns.length === 0)
                                     ? __('No Campaigns Available', 'give-data-generator')
                                     : __('Generate Test Data', 'give-data-generator')
                             }

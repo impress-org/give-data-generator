@@ -38,18 +38,18 @@ const DataGeneratorApp = () => {
 
     return (
         <div className="wrap">
-            <h1>{__('Data Generator (React)', 'give-data-generator')}</h1>
+            <h1>{__('Data Generator', 'give-data-generator')}</h1>
 
             <div className="notice notice-info">
-                <p>{__('This is the React version of the Data Generator. You can switch back to the vanilla version by removing "?react=1" from the URL.', 'give-data-generator')}</p>
+                <p>
+                    {__(
+                        'This tool generates test data for GiveWP including campaigns, donations, donors, subscriptions, donation forms, and more. Use only for testing purposes. ',
+                        'give-data-generator'
+                    )}
+                </p>
             </div>
 
-            <TabPanel
-                className="data-generator-tabs"
-                activeClass="is-active"
-                orientation="vertical"
-                tabs={tabs}
-            >
+            <TabPanel className="data-generator-tabs" activeClass="is-active" orientation="vertical" tabs={tabs}>
                 {(tab) => tab.content}
             </TabPanel>
         </div>

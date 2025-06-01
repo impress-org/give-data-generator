@@ -6,8 +6,10 @@ import {
     Card,
     CardBody
 } from '@wordpress/components';
+import { useDispatch } from '@wordpress/data';
 
 const CleanupTab = () => {
+    const { invalidateResolution } = useDispatch('core');
     const [isSubmitting, setIsSubmitting] = useState({});
     const [result, setResult] = useState(null);
 
@@ -47,6 +49,20 @@ const CleanupTab = () => {
                 success: data.success,
                 message: data.data?.message || 'Operation completed'
             });
+
+            if (data.success && actionType === 'archive_campaigns') {
+                // Invalidate campaign cache since archiving campaigns affects the active campaigns list
+                invalidateResolution('getEntityRecords', [
+                    'givewp',
+                    'campaign',
+                    {
+                        status: ['active'],
+                        per_page: 100,
+                        orderby: 'date',
+                        order: 'desc',
+                    }
+                ]);
+            }
         } catch (error) {
             console.error('Cleanup action error:', error);
             setResult({

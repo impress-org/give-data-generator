@@ -11,8 +11,11 @@ import {
     Flex,
     FlexItem
 } from '@wordpress/components';
+import { useDispatch } from '@wordpress/data';
 
 const CampaignsTab = () => {
+    const { invalidateResolution, invalidateResolutionForStore } = useDispatch('core');
+
     const [formData, setFormData] = useState({
         campaign_count: 5,
         campaign_status: 'active',
@@ -58,6 +61,22 @@ const CampaignsTab = () => {
                 success: data.success,
                 message: data.data?.message || 'Operation completed'
             });
+
+            if (data.success) {
+                // Invalidate campaign cache so other tabs will refetch updated data
+                invalidateResolution('getEntityRecords', ['givewp', 'campaign']);
+                invalidateResolution('getEntityRecords', [
+                    'givewp',
+                    'campaign',
+                    {
+                        status: ['active'],
+                        per_page: 100,
+                        orderby: 'date',
+                        order: 'desc',
+                    }
+                ]);
+                invalidateResolutionForStore();
+            }
         } catch (error) {
             console.error('Form submission error:', error);
             setResult({
