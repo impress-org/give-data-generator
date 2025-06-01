@@ -147,6 +147,7 @@ class CampaignGenerator
             $campaignDuration = sanitize_text_field($_POST['campaign_duration']);
             $createForms = !empty($_POST['create_forms']);
             $titlePrefix = sanitize_text_field($_POST['campaign_title_prefix']);
+            $imageSource = sanitize_text_field($_POST['image_source'] ?? 'none');
 
             // Validate inputs
             if ($campaignCount < 1 || $campaignCount > 50) {
@@ -171,7 +172,8 @@ class CampaignGenerator
                 $includeLongDesc,
                 $campaignDuration,
                 $createForms,
-                $titlePrefix
+                $titlePrefix,
+                $imageSource
             );
 
             wp_send_json_success([
@@ -202,6 +204,7 @@ class CampaignGenerator
      * @param string $duration
      * @param bool $createForms
      * @param string $titlePrefix
+     * @param string $imageSource
      *
      * @return int Number of campaigns generated
      * @throws Exception
@@ -217,7 +220,8 @@ class CampaignGenerator
         bool $includeLongDesc,
         string $duration,
         bool $createForms,
-        string $titlePrefix
+        string $titlePrefix,
+        string $imageSource = 'none'
     ): int {
         $generated = 0;
         $errors = [];
@@ -235,7 +239,8 @@ class CampaignGenerator
                     $includeLongDesc,
                     $duration,
                     $createForms,
-                    $titlePrefix
+                    $titlePrefix,
+                    $imageSource
                 );
                 $generated++;
                 $consecutiveErrors = 0;
@@ -278,6 +283,7 @@ class CampaignGenerator
      * @param string $duration
      * @param bool $createForms
      * @param string $titlePrefix
+     * @param string $imageSource
      *
      * @throws Exception
      */
@@ -291,13 +297,15 @@ class CampaignGenerator
         bool $includeLongDesc,
         string $duration,
         bool $createForms,
-        string $titlePrefix
+        string $titlePrefix,
+        string $imageSource = 'none'
     ): void {
         // Generate campaign data
         $title = $this->generateCampaignTitle($titlePrefix);
         $goal = $this->generateRandomGoalAmount($goalAmountMin, $goalAmountMax);
         $colors = $this->generateColors($colorScheme);
         $dates = $this->generateCampaignDates($duration);
+        $imageUrl = $this->generateCampaignImage($title, $imageSource);
 
         // Create campaign
         $campaign = Campaign::create([
@@ -306,7 +314,7 @@ class CampaignGenerator
             'shortDescription' => $includeShortDesc ? $this->getRandomItem($this->shortDescriptions) : '',
             'longDescription' => $includeLongDesc ? $this->generateLongDescription() : '',
             'logo' => '',
-            'image' => '',
+            'image' => $imageUrl,
             'goal' => $goal,
             'goalType' => new CampaignGoalType($goalType),
             'status' => new CampaignStatus($status),
@@ -328,7 +336,306 @@ class CampaignGenerator
         // Set campaign page status to publish
         if ($campaign->id && $page = $campaign->page()) {
             $page->status = CampaignPageStatus::PUBLISH();
+
+            // Set featured image if campaign has an image
+            if (!has_post_thumbnail($page->id)) {
+                if ($campaign->image && $imageId = attachment_url_to_postid($campaign->image)) {
+                    set_post_thumbnail($page->id, $imageId);
+                }
+            }
+
             $page->save();
+        }
+    }
+
+    /**
+     * Generate and upload campaign image based on title and image source.
+     *
+     * @since 1.0.0
+     *
+     * @param string $campaignTitle
+     * @param string $imageSource
+     * @return string Image URL
+     */
+    private function generateCampaignImage(string $campaignTitle, string $imageSource): string
+    {
+        // Skip image generation if not enabled
+        if ($imageSource === 'none') {
+            return '';
+        }
+
+        try {
+            // Create search terms from campaign title
+            $searchTerms = $this->createSearchTermsFromTitle($campaignTitle);
+
+            $imageData = null;
+
+            // Try different image sources
+            switch ($imageSource) {
+                case 'openverse':
+                    $imageData = $this->fetchImageFromOpenverse($searchTerms);
+                    break;
+                case 'lorem_picsum':
+                    $imageData = $this->fetchImageFromLoremPicsum($searchTerms);
+                    break;
+                case 'random':
+                    // Try sources in random order
+                    $sources = ['openverse', 'lorem_picsum'];
+                    shuffle($sources);
+                    foreach ($sources as $source) {
+                        switch ($source) {
+                            case 'openverse':
+                                $imageData = $this->fetchImageFromOpenverse($searchTerms);
+                                break;
+                            case 'lorem_picsum':
+                                $imageData = $this->fetchImageFromLoremPicsum($searchTerms);
+                                break;
+                        }
+                        if ($imageData) break;
+                    }
+                    break;
+                default:
+                    return '';
+            }
+
+            if (!$imageData) {
+                return '';
+            }
+
+            // Download and upload the image
+            return $this->downloadAndUploadImage($imageData, $campaignTitle);
+
+        } catch (Exception $e) {
+            error_log('Campaign image generation error: ' . $e->getMessage());
+            return '';
+        }
+    }
+
+    /**
+     * Create search terms from campaign title.
+     *
+     * @since 1.0.0
+     *
+     * @param string $title
+     * @return string
+     */
+    private function createSearchTermsFromTitle(string $title): string
+    {
+        // Remove common words and clean up title for better search
+        $commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'fund', 'initiative', 'program', 'project'];
+        $words = explode(' ', strtolower($title));
+        $filteredWords = array_filter($words, function($word) use ($commonWords) {
+            return !in_array(trim($word), $commonWords) && strlen(trim($word)) > 2;
+        });
+
+        return implode(' ', array_slice($filteredWords, 0, 3)); // Use first 3 meaningful words
+    }
+
+    /**
+     * Fetch image from Openverse API based on search term.
+     *
+     * @since 1.0.0
+     *
+     * @param string $searchTerm
+     * @return array|null
+     */
+    private function fetchImageFromOpenverse(string $searchTerm): ?array
+    {
+        $searchQuery = urlencode($searchTerm);
+        $apiUrl = "https://api.openverse.org/v1/images/?format=json&q={$searchQuery}&page_size=20&mature=false";
+
+        $response = wp_remote_get($apiUrl, [
+            'timeout' => 30,
+            'headers' => [
+                'User-Agent' => 'GiveWP Campaign Generator/1.0 (WordPress Plugin)',
+            ]
+        ]);
+
+        if (is_wp_error($response)) {
+            error_log('Openverse API Error: ' . $response->get_error_message());
+            return null;
+        }
+
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (empty($data['results'])) {
+            return null;
+        }
+
+        // Filter out images that are too small or have issues
+        $validImages = array_filter($data['results'], function($image) {
+            return !empty($image['url']) &&
+                   !empty($image['license']) &&
+                   ($image['width'] ?? 0) >= 400 &&
+                   ($image['height'] ?? 0) >= 300;
+        });
+
+        if (empty($validImages)) {
+            return null;
+        }
+
+        // Get a random image from the results
+        $selectedImage = $validImages[array_rand($validImages)];
+
+        return [
+            'url' => $selectedImage['url'],
+            'title' => $selectedImage['title'] ?? '',
+            'creator' => $selectedImage['creator'] ?? '',
+            'license' => $selectedImage['license'] ?? '',
+            'source' => 'Openverse (' . ($selectedImage['source'] ?? 'Unknown') . ')',
+            'foreign_landing_url' => $selectedImage['foreign_landing_url'] ?? '',
+            'attribution' => $this->buildOpenverseAttribution($selectedImage)
+        ];
+    }
+
+    /**
+     * Build proper attribution for Openverse images.
+     *
+     * @since 1.0.0
+     *
+     * @param array $imageData
+     * @return string
+     */
+    private function buildOpenverseAttribution(array $imageData): string
+    {
+        $attribution = '';
+
+        if (!empty($imageData['title'])) {
+            $attribution .= '"' . $imageData['title'] . '"';
+        }
+
+        if (!empty($imageData['creator'])) {
+            $attribution .= ' by ' . $imageData['creator'];
+        }
+
+        if (!empty($imageData['license'])) {
+            $attribution .= ' is licensed under ' . $imageData['license'];
+        }
+
+        if (!empty($imageData['foreign_landing_url'])) {
+            $attribution .= '. View original at: ' . $imageData['foreign_landing_url'];
+        }
+
+        $attribution .= ' (via Openverse)';
+
+        return $attribution;
+    }
+
+    /**
+     * Fetch image from Lorem Picsum service.
+     *
+     * @since 1.0.0
+     *
+     * @param string $searchTerm
+     * @return array|null
+     */
+    private function fetchImageFromLoremPicsum(string $searchTerm): ?array
+    {
+        // Lorem Picsum provides random images, so we'll just get a random one
+        $width = rand(800, 1200);
+        $height = rand(600, 800);
+        $imageId = rand(1, 1000);
+
+        return [
+            'url' => "https://picsum.photos/{$width}/{$height}?random={$imageId}",
+            'title' => 'Random Image',
+            'creator' => 'Lorem Picsum',
+            'license' => 'Free to use',
+            'source' => 'Lorem Picsum',
+            'foreign_landing_url' => 'https://picsum.photos/',
+            'attribution' => 'Image from Lorem Picsum (https://picsum.photos/)'
+        ];
+    }
+
+    /**
+     * Download image from URL and upload to WordPress media library.
+     *
+     * @since 1.0.0
+     *
+     * @param array $imageData
+     * @param string $campaignTitle
+     * @return string Uploaded image URL
+     */
+    private function downloadAndUploadImage(array $imageData, string $campaignTitle): string
+    {
+        try {
+            // Download the image
+            $response = wp_remote_get($imageData['url'], [
+                'timeout' => 30,
+                'headers' => [
+                    'User-Agent' => 'GiveWP Campaign Generator/1.0 (WordPress Plugin)',
+                ]
+            ]);
+
+            if (is_wp_error($response)) {
+                error_log('Image download error: ' . $response->get_error_message());
+                return '';
+            }
+
+            $imageContent = wp_remote_retrieve_body($response);
+            $contentType = wp_remote_retrieve_header($response, 'content-type');
+
+            if (empty($imageContent)) {
+                return '';
+            }
+
+            // Determine file extension from content type
+            $extension = 'jpg'; // default
+            if (strpos($contentType, 'png') !== false) {
+                $extension = 'png';
+            } elseif (strpos($contentType, 'webp') !== false) {
+                $extension = 'webp';
+            } elseif (strpos($contentType, 'gif') !== false) {
+                $extension = 'gif';
+            }
+
+            // Create a safe filename
+            $filename = sanitize_file_name(
+                'campaign-' . sanitize_title($campaignTitle) . '-' . time() . '.' . $extension
+            );
+
+            // Upload the image using WordPress functions
+            $upload = wp_upload_bits($filename, null, $imageContent);
+
+            if ($upload['error']) {
+                error_log('WordPress upload error: ' . $upload['error']);
+                return '';
+            }
+
+            // Create attachment post
+            $attachment = [
+                'post_mime_type' => $contentType,
+                'post_title' => $imageData['title'] ?: $campaignTitle . ' Image',
+                'post_content' => '',
+                'post_excerpt' => $imageData['attribution'] ?? '',
+                'post_status' => 'inherit'
+            ];
+
+            $attachmentId = wp_insert_attachment($attachment, $upload['file']);
+
+            if (is_wp_error($attachmentId)) {
+                error_log('Attachment creation error: ' . $attachmentId->get_error_message());
+                return '';
+            }
+
+            // Generate attachment metadata
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            $attachmentData = wp_generate_attachment_metadata($attachmentId, $upload['file']);
+            wp_update_attachment_metadata($attachmentId, $attachmentData);
+
+            // Add source information to attachment meta
+            update_post_meta($attachmentId, '_campaign_image_source', $imageData['source']);
+            update_post_meta($attachmentId, '_campaign_image_attribution', $imageData['attribution']);
+            update_post_meta($attachmentId, '_campaign_image_license', $imageData['license']);
+            if (!empty($imageData['foreign_landing_url'])) {
+                update_post_meta($attachmentId, '_campaign_image_original_url', $imageData['foreign_landing_url']);
+            }
+
+            return $upload['url'];
+
+        } catch (Exception $e) {
+            error_log('Image processing error: ' . $e->getMessage());
+            return '';
         }
     }
 

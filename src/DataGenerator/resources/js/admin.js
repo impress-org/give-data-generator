@@ -156,7 +156,8 @@ class DataGeneratorAdmin {
             include_long_desc: document.getElementById('include_long_desc').checked ? '1' : '',
             campaign_duration: document.getElementById('campaign_duration').value,
             create_forms: document.getElementById('create_forms').checked ? '1' : '',
-            campaign_title_prefix: document.getElementById('campaign_title_prefix').value
+            campaign_title_prefix: document.getElementById('campaign_title_prefix').value,
+            image_source: document.getElementById('image_source').value
         });
 
         try {

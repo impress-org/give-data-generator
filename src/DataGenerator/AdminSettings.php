@@ -455,6 +455,27 @@ class AdminSettings
                             <p class="description"><?php _e('Prefix for generated campaign titles (e.g., "Test Campaign - Save the Whales").', 'give-data-generator'); ?></p>
                         </td>
                     </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="image_source"><?php _e('Campaign Images', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <select name="image_source" id="image_source" class="regular-text">
+                                <option value="none"><?php _e('No Images', 'give-data-generator'); ?></option>
+                                <option value="openverse"><?php _e('Openverse (Open Licensed)', 'give-data-generator'); ?></option>
+                                <option value="lorem_picsum"><?php _e('Lorem Picsum (Random)', 'give-data-generator'); ?></option>
+                                <option value="random"><?php _e('Random (All Sources)', 'give-data-generator'); ?></option>
+                            </select>
+                            <p class="description">
+                                <?php _e('Choose where to fetch campaign images from. Images will be downloaded and uploaded to your WordPress media library.', 'give-data-generator'); ?>
+                                <br>
+                                <strong><?php _e('Openverse:', 'give-data-generator'); ?></strong> <?php _e('Provides properly licensed images with attribution from sources like Flickr, Wikimedia Commons, etc.', 'give-data-generator'); ?>
+                                <br>
+                                <strong><?php _e('Lorem Picsum:', 'give-data-generator'); ?></strong> <?php _e('Beautiful random placeholder images for testing purposes.', 'give-data-generator'); ?>
+                            </p>
+                        </td>
+                    </tr>
                 </table>
 
                 <p class="submit">
