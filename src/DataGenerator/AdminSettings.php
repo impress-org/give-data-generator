@@ -23,8 +23,8 @@ class AdminSettings
      * @var array
      */
     private array $tabs = [
-        'donations' => 'Donations',
         'campaigns' => 'Campaigns',
+        'donations' => 'Donations',
         'subscriptions' => 'Subscriptions',
     ];
 
@@ -92,9 +92,9 @@ class AdminSettings
      */
     private function getCurrentTab(): string
     {
-        $tab = $_GET['tab'] ?? 'donations';
+        $tab = $_GET['tab'] ?? 'campaigns';
 
-        return array_key_exists($tab, $this->tabs) ? $tab : 'donations';
+        return array_key_exists($tab, $this->tabs) ? $tab : 'campaigns';
     }
 
     /**
