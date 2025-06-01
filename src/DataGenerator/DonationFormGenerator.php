@@ -96,7 +96,7 @@ class DonationFormGenerator
             $campaignId = intval($_POST['campaign_id']);
             $formCount = intval($_POST['form_count']);
             $formStatus = sanitize_text_field($_POST['form_status']);
-            $enableGoals = !empty($_POST['enable_goals']);
+            $enableGoals = !empty($_POST['enable_goals']) ? filter_var($_POST['enable_goals'], FILTER_VALIDATE_BOOLEAN) : false;
             $goalType = sanitize_text_field($_POST['goal_type']);
             $goalAmountMin = intval($_POST['goal_amount_min']);
             $goalAmountMax = intval($_POST['goal_amount_max']);
@@ -265,7 +265,7 @@ class DonationFormGenerator
         // Create form settings
         $formSettings = FormSettings::fromArray([
             'showHeader' => true,
-            'enableDonationGoal' => $goalSettings['enabled'],
+            'enableDonationGoal' => $goalSettings['enabled'] ?? false,
             'goalAmount' => $goalSettings['amount'],
             'goalType' => $goalSettings['type'],
             'goalSource' => $goalSettings['source'],
@@ -353,7 +353,7 @@ class DonationFormGenerator
                 'enabled' => false,
                 'amount' => 0,
                 'type' => 'amount',
-                'source' => GoalSource::FORM()->getValue(),
+                'source' => GoalSource::CAMPAIGN()->getValue(),
             ];
         }
 
