@@ -3,6 +3,7 @@
 namespace GiveDataGenerator\DataGenerator;
 
 use Give\Campaigns\Models\Campaign;
+use Give\Campaigns\ValueObjects\CampaignStatus;
 use Give\Donations\ValueObjects\DonationStatus;
 use Give\Subscriptions\ValueObjects\SubscriptionStatus;
 use Give\Subscriptions\ValueObjects\SubscriptionPeriod;
@@ -874,7 +875,9 @@ class AdminSettings
     private function getCampaigns(): array
     {
         try {
-            $campaigns = Campaign::query()->getAll();
+            $campaigns = Campaign::query()
+                ->where('status', CampaignStatus::ACTIVE)
+                ->getAll();
 
             // Ensure we always return an array
             if (!is_array($campaigns)) {
@@ -882,7 +885,7 @@ class AdminSettings
             }
 
             // Debug: Log how many campaigns we found
-            error_log('Data Generator: Found ' . count($campaigns) . ' campaigns');
+            error_log('Data Generator: Found ' . count($campaigns) . ' active campaigns');
 
             return $campaigns;
         } catch (\Exception $e) {
