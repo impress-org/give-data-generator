@@ -142,12 +142,12 @@ class TestAdminSettings extends TestCase
         $output = ob_get_clean();
 
         // Basic checks that the page rendered
-        $this->assertStringContainsString('Test Donation Generator', $output);
+        $this->assertStringContainsString('Data Generator', $output);
         $this->assertStringContainsString('campaign_id', $output);
         $this->assertStringContainsString('donation_count', $output);
         $this->assertStringContainsString('date_range', $output);
         $this->assertStringContainsString('donation_mode', $output);
-        $this->assertStringContainsString('Generate Test Donations', $output);
+        $this->assertStringContainsString('Generate Test Data', $output);
     }
 
     /**
@@ -231,7 +231,7 @@ class TestAdminSettings extends TestCase
         $output = ob_get_clean();
 
         // Check that the form has the necessary IDs and classes for JavaScript to work
-        $this->assertStringContainsString('id="test-donation-generator-form"', $output);
+        $this->assertStringContainsString('id="data-generator-form"', $output);
         $this->assertStringContainsString('id="date_range"', $output);
         $this->assertStringContainsString('id="custom-date-range"', $output);
         $this->assertStringContainsString('id="generate-donations"', $output);
@@ -255,7 +255,7 @@ class TestAdminSettings extends TestCase
         $output = ob_get_clean();
 
         // Check for nonce field
-        $this->assertStringContainsString('test_donation_generator_nonce', $output);
+        $this->assertStringContainsString('data_generator_nonce', $output);
     }
 
     /**
@@ -319,9 +319,9 @@ class TestAdminSettings extends TestCase
         $output = ob_get_clean();
 
         // Should still render the form
-        $this->assertStringContainsString('Test Donation Generator', $output);
+        $this->assertStringContainsString('Data Generator', $output);
         $this->assertStringContainsString('Select a Campaign', $output);
-        $this->assertStringContainsString('Generate Test Donations', $output);
+        $this->assertStringContainsString('Generate Test Data', $output);
     }
 
     /**

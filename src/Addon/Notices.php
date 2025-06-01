@@ -21,7 +21,7 @@ class Notices
     {
         Give()->notices->register_notice(
             [
-                'id' => 'give-faker-activation-error',
+                'id' => 'give-data-generator-activation-error',
                 'type' => 'error',
                 'description' => View::load('admin/notices/give-version-error'),
                 'show' => true,

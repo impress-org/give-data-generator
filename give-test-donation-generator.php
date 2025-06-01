@@ -7,21 +7,21 @@ use GiveFaker\Addon\ServiceProvider as AddonServiceProvider;
 use GiveFaker\TestDonationGenerator\ServiceProvider as TestDonationGeneratorServiceProvider;
 
 /**
- * Plugin Name:         Give Test Donation Generator
- * Plugin URI:          https://givewp.com/addons/test-donation-generator/
- * Description:         Generate test donations for GiveWP using the Donation Model
+ * Plugin Name:         Give Data Generator
+ * Plugin URI:          https://givewp.com/addons/data-generator/
+ * Description:         Generate test data for GiveWP including donations, donors, and more
  * Version:             1.0.0
  * Requires at least:   4.9
  * Requires PHP:        7.4
  * Author:              GiveWP
  * Author URI:          https://givewp.com/
- * Text Domain:         give-faker
+ * Text Domain:         give-data-generator
  * Domain Path:         /languages
  */
 defined('ABSPATH') or exit;
 
 // Add-on name
-define('GIVE_FAKER_NAME', 'Give Test Donation Generator');
+define('GIVE_FAKER_NAME', 'Give Data Generator');
 
 // Versions
 define('GIVE_FAKER_VERSION', '1.0.0');

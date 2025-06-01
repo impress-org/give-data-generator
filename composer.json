@@ -1,6 +1,6 @@
 {
-    "name": "impress-org/givewp-test-donation-generator",
-    "description": "GiveWP add-on for generating realistic test donations with configurable campaigns, date ranges, and donation modes",
+    "name": "impress-org/givewp-data-generator",
+    "description": "GiveWP add-on for generating realistic test data including donations, donors, and more with configurable campaigns, date ranges, and modes",
     "type": "wordpress-plugin",
     "license": "GPL-3.0-or-later",
     "require-dev": {

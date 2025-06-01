@@ -8,7 +8,7 @@ use GiveFaker\TestDonationGenerator\AdminSettings;
 use GiveFaker\TestDonationGenerator\DonationGenerator;
 
 /**
- * Service provider for the Test Donation Generator domain.
+ * Service provider for the Data Generator domain.
  *
  * @package     GiveFaker\TestDonationGenerator
  * @since       1.0.0
@@ -47,7 +47,7 @@ class ServiceProvider implements ServiceProviderInterface
     public function enqueueAdminScripts($hook_suffix)
     {
         // The hook suffix for submenus under edit.php?post_type=give_forms is: give_forms_page_{menu_slug}
-        if ($hook_suffix !== 'give_forms_page_test-donation-generator') {
+        if ($hook_suffix !== 'give_forms_page_data-generator') {
             return;
         }
 
@@ -55,7 +55,7 @@ class ServiceProvider implements ServiceProviderInterface
 
         // Enqueue our admin script
         wp_enqueue_script(
-            'test-donation-generator-admin',
+            'data-generator-admin',
             GIVE_FAKER_URL . 'build/admin.js',
             ['jquery'],
             GIVE_FAKER_VERSION,
@@ -63,13 +63,13 @@ class ServiceProvider implements ServiceProviderInterface
         );
 
         // Localize script with data and strings
-        wp_localize_script('test-donation-generator-admin', 'testDonationGenerator', [
+        wp_localize_script('data-generator-admin', 'dataGenerator', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('test_donation_generator_nonce'),
+            'nonce' => wp_create_nonce('data_generator_nonce'),
             'strings' => [
-                'errorMessage' => __('An error occurred while generating donations.', 'give-faker'),
-                'processing' => __('Processing...', 'give-faker'),
-                'success' => __('Success!', 'give-faker'),
+                'errorMessage' => __('An error occurred while generating data.', 'give-data-generator'),
+                'processing' => __('Processing...', 'give-data-generator'),
+                'success' => __('Success!', 'give-data-generator'),
             ]
         ]);
     }

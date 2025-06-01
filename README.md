@@ -1,10 +1,11 @@
-# GiveWP - Test Donation Generator
+# GiveWP - Data Generator
 
-A WordPress plugin that generates test donations for GiveWP using the Donation Model. This add-on is designed for testing and development purposes only.
+A WordPress plugin that generates test data for GiveWP including donations, donors, and more. This add-on is designed for testing and development purposes only.
 
 ## Features
 
 - Generate test donations using the GiveWP Donation Model
+- Generate test donor data with realistic information
 - Select specific campaigns for donation generation
 - Configure the number of donations to generate (1-1000)
 - Set custom date ranges for when donations should be created
@@ -16,11 +17,11 @@ A WordPress plugin that generates test donations for GiveWP using the Donation M
 1. Download or clone this repository to your WordPress plugins directory
 2. Run `composer install --no-dev` from the plugin directory
 3. Activate the plugin through the WordPress admin
-4. Navigate to **Donations > Test Donation Generator** in your WordPress admin
+4. Navigate to **Donations > Data Generator** in your WordPress admin
 
 ## Usage
 
-1. Go to **Donations > Test Donation Generator** in your WordPress admin
+1. Go to **Donations > Data Generator** in your WordPress admin
 2. Select a campaign from the dropdown
 3. Choose how many donations to generate (1-1000)
 4. Select a date range:
@@ -28,7 +29,7 @@ A WordPress plugin that generates test donations for GiveWP using the Donation M
    - Last 90 Days
    - Last Year
    - Custom Range (specify start and end dates)
-5. Click "Generate Test Donations"
+5. Click "Generate Test Data"
 
 ## Requirements
 

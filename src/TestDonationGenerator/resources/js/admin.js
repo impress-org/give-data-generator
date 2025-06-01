@@ -1,11 +1,11 @@
 /**
- * Test Donation Generator Admin JavaScript
+ * Data Generator Admin JavaScript
  *
  * @package     GiveFaker\TestDonationGenerator
  * @since       1.0.0
  */
 
-class TestDonationGeneratorAdmin {
+class DataGeneratorAdmin {
     /**
      * Initialize the admin functionality
      */
@@ -21,7 +21,7 @@ class TestDonationGeneratorAdmin {
         document.getElementById('date_range').addEventListener('change', this.toggleCustomDateRange);
 
         // Handle form submission
-        document.getElementById('test-donation-generator-form').addEventListener('submit', this.handleFormSubmission);
+        document.getElementById('data-generator-form').addEventListener('submit', this.handleFormSubmission);
     }
 
     /**
@@ -50,7 +50,7 @@ class TestDonationGeneratorAdmin {
         // Prepare form data
         const formData = new URLSearchParams({
             action: 'generate_test_donations',
-            nonce: testDonationGenerator.nonce,
+            nonce: dataGenerator.nonce,
             campaign_id: document.getElementById('campaign_id').value,
             donation_count: document.getElementById('donation_count').value,
             date_range: document.getElementById('date_range').value,
@@ -61,7 +61,7 @@ class TestDonationGeneratorAdmin {
 
         try {
             // Submit fetch request
-            const response = await fetch(testDonationGenerator.ajaxUrl, {
+            const response = await fetch(dataGenerator.ajaxUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -70,11 +70,11 @@ class TestDonationGeneratorAdmin {
             });
 
             const data = await response.json();
-            TestDonationGeneratorAdmin.handleSuccess(data);
+            DataGeneratorAdmin.handleSuccess(data);
         } catch (error) {
-            TestDonationGeneratorAdmin.handleError();
+            DataGeneratorAdmin.handleError();
         } finally {
-            TestDonationGeneratorAdmin.handleComplete();
+            DataGeneratorAdmin.handleComplete();
         }
     }
 
@@ -99,7 +99,7 @@ class TestDonationGeneratorAdmin {
         const results = document.getElementById('generation-results');
         const resultsContent = document.getElementById('results-content');
 
-        resultsContent.innerHTML = `<div class="notice notice-error"><p>${testDonationGenerator.strings.errorMessage}</p></div>`;
+        resultsContent.innerHTML = `<div class="notice notice-error"><p>${dataGenerator.strings.errorMessage}</p></div>`;
         results.style.display = 'block';
     }
 
@@ -119,8 +119,8 @@ class TestDonationGeneratorAdmin {
 // Initialize when document is ready
 document.addEventListener('DOMContentLoaded', () => {
     // Only initialize if we're on the correct page
-    if (document.getElementById('test-donation-generator-form')) {
-        const admin = new TestDonationGeneratorAdmin();
+    if (document.getElementById('data-generator-form')) {
+        const admin = new DataGeneratorAdmin();
         admin.init();
     }
 });

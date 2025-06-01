@@ -14,7 +14,7 @@ use Give\Donors\Models\Donor;
 use Give\Framework\Support\ValueObjects\Money;
 
 /**
- * Test Donation Generator.
+ * Data Generator.
  *
  * @package     GiveFaker\TestDonationGenerator
  * @since       1.0.0
@@ -66,14 +66,14 @@ class DonationGenerator
     public function handleAjaxRequest()
     {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'test_donation_generator_nonce')) {
-            wp_send_json_error(['message' => __('Security check failed.', 'give-faker')]);
+        if (!wp_verify_nonce($_POST['nonce'], 'data_generator_nonce')) {
+            wp_send_json_error(['message' => __('Security check failed.', 'give-data-generator')]);
             return;
         }
 
         // Check user permissions
         if (!current_user_can('manage_give_settings')) {
-            wp_send_json_error(['message' => __('You do not have permission to perform this action.', 'give-faker')]);
+            wp_send_json_error(['message' => __('You do not have permission to perform this action.', 'give-data-generator')]);
             return;
         }
 
@@ -87,12 +87,12 @@ class DonationGenerator
 
             // Validate inputs
             if (empty($campaignId)) {
-                wp_send_json_error(['message' => __('Please select a campaign.', 'give-faker')]);
+                wp_send_json_error(['message' => __('Please select a campaign.', 'give-data-generator')]);
                 return;
             }
 
             if ($donationCount < 1 || $donationCount > 1000) {
-                wp_send_json_error(['message' => __('Number of donations must be between 1 and 1000.', 'give-faker')]);
+                wp_send_json_error(['message' => __('Number of donations must be between 1 and 1000.', 'give-data-generator')]);
                 return;
             }
 
@@ -104,7 +104,7 @@ class DonationGenerator
             // Get campaign
             $campaign = Campaign::find($campaignId);
             if (!$campaign) {
-                wp_send_json_error(['message' => __('Invalid campaign selected.', 'give-faker')]);
+                wp_send_json_error(['message' => __('Invalid campaign selected.', 'give-data-generator')]);
                 return;
             }
 
@@ -113,7 +113,7 @@ class DonationGenerator
 
             wp_send_json_success([
                 'message' => sprintf(
-                    __('Successfully generated %d test donations for campaign "%s".', 'give-faker'),
+                    __('Successfully generated %d test donations for campaign "%s".', 'give-data-generator'),
                     $generated,
                     $campaign->title
                 )
@@ -148,7 +148,7 @@ class DonationGenerator
         try {
             $dateInfo = $this->getDateRange($dateRange, $startDate, $endDate);
         } catch (Exception $e) {
-            error_log('Test Donation Generator - Date Range Error: ' . $e->getMessage());
+            error_log('Data Generator - Date Range Error: ' . $e->getMessage());
             throw $e;
         }
 
@@ -159,13 +159,13 @@ class DonationGenerator
                 $consecutiveErrors = 0; // Reset consecutive error counter on success
             } catch (Exception $e) {
                 $consecutiveErrors++;
-                $errorMessage = 'Test Donation Generator Error (iteration ' . ($i + 1) . '): ' . $e->getMessage();
+                $errorMessage = 'Data Generator Error (iteration ' . ($i + 1) . '): ' . $e->getMessage();
                 error_log($errorMessage);
                 $errors[] = $errorMessage;
 
                 // Only stop if we have too many consecutive errors (indicates a systemic issue)
                 if ($consecutiveErrors >= 10) {
-                    error_log('Test Donation Generator: Too many consecutive errors, stopping generation. Last error: ' . $e->getMessage());
+                    error_log('Data Generator: Too many consecutive errors, stopping generation. Last error: ' . $e->getMessage());
                     break;
                 }
             }
@@ -173,7 +173,7 @@ class DonationGenerator
 
         // If we generated some donations but had errors, log them but don't fail
         if (!empty($errors) && $generated > 0) {
-            error_log('Test Donation Generator: Generated ' . $generated . ' donations with ' . count($errors) . ' errors.');
+            error_log('Data Generator: Generated ' . $generated . ' donations with ' . count($errors) . ' errors.');
         }
 
         // Only throw an exception if we couldn't generate any donations at all
@@ -259,11 +259,11 @@ class DonationGenerator
             $donation = Donation::create($donationData);
 
             // Log success for debugging
-            error_log('Test Donation Generator: Successfully created donation ID ' . $donation->id . ' for campaign ' . $campaign->id);
+            error_log('Data Generator: Successfully created donation ID ' . $donation->id . ' for campaign ' . $campaign->id);
 
         } catch (Exception $e) {
-            error_log('Test Donation Generator: Failed to create donation. Error: ' . $e->getMessage());
-            error_log('Test Donation Generator: Donation data: ' . print_r($donationData, true));
+            error_log('Data Generator: Failed to create donation. Error: ' . $e->getMessage());
+            error_log('Data Generator: Donation data: ' . print_r($donationData, true));
             throw $e;
         }
     }
@@ -330,7 +330,7 @@ class DonationGenerator
                 break;
             case 'custom':
                 if (empty($startDate) || empty($endDate)) {
-                    throw new Exception(__('Start and end dates are required for custom range.', 'give-faker'));
+                    throw new Exception(__('Start and end dates are required for custom range.', 'give-data-generator'));
                 }
                 $start = new DateTime($startDate);
                 $end = new DateTime($endDate);

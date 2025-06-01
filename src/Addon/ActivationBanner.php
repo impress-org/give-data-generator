@@ -31,7 +31,7 @@ class ActivationBanner
             'file' => GIVE_FAKER_FILE,
             'name' => GIVE_FAKER_NAME,
             'version' => GIVE_FAKER_VERSION,
-            'settings_url' => admin_url('edit.php?post_type=give_forms&page=give-settings&tab=give-faker'),
+            'settings_url' => admin_url('edit.php?post_type=give_forms&page=give-settings&tab=give-data-generator'),
             'documentation_url' => 'https://givewp.com/documentation/add-ons/boilerplate/',
             'support_url' => 'https://givewp.com/support/',
             'testing' => false, // Never leave true.

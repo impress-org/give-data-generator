@@ -20,28 +20,28 @@ class Language
     {
         // Set filter for plugin's languages directory.
         $langDir = apply_filters(
-            sprintf('%s_languages_directory', 'give-faker'),
+            sprintf('%s_languages_directory', 'give-data-generator'),
             // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores, WordPress.NamingConventions.ValidHookName.NotLowercase
             dirname(GIVE_FAKER_BASENAME) . '/languages/'
         );
 
         // Traditional WordPress plugin locale filter.
-        $locale = apply_filters('plugin_locale', get_locale(), 'give-faker');
-        $moFile = sprintf('%1$s-%2$s.mo', 'give-faker', $locale);
+        $locale = apply_filters('plugin_locale', get_locale(), 'give-data-generator');
+        $moFile = sprintf('%1$s-%2$s.mo', 'give-data-generator', $locale);
 
         // Setup paths to current locale file.
         $moFileLocal = $langDir . $moFile;
-        $moFileGlobal = WP_LANG_DIR . 'give-faker' . $moFile;
+        $moFileGlobal = WP_LANG_DIR . 'give-data-generator' . $moFile;
 
         if (file_exists($moFileGlobal)) {
             // Look in global /wp-content/languages/TEXTDOMAIN folder.
-            load_textdomain('give-faker', $moFileGlobal);
+            load_textdomain('give-data-generator', $moFileGlobal);
         } elseif (file_exists($moFileLocal)) {
             // Look in local /wp-content/plugins/TEXTDOMAIN/languages/ folder.
-            load_textdomain('give-faker', $moFileLocal);
+            load_textdomain('give-data-generator', $moFileLocal);
         } else {
             // Load the default language files.
-            load_plugin_textdomain('give-faker', false, $langDir);
+            load_plugin_textdomain('give-data-generator', false, $langDir);
         }
     }
 }
