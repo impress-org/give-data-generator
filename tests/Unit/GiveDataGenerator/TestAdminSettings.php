@@ -238,9 +238,11 @@ class TestAdminSettings extends TestCase
         $this->assertStringContainsString('class="spinner"', $output);
         $this->assertStringContainsString('id="generation-results"', $output);
 
-        // The JavaScript should now be enqueued separately through ServiceProvider
-        // So we don't expect inline <script> tags in the admin page output
-        $this->assertStringNotContainsString('<script>', $output);
+        // Check that tab-specific JavaScript functionality is included
+        $this->assertStringContainsString('<script>', $output);
+        $this->assertStringContainsString('DOMContentLoaded', $output);
+        $this->assertStringContainsString('date_range', $output);
+        $this->assertStringContainsString('custom-date-range', $output);
     }
 
     /**

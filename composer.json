@@ -13,8 +13,8 @@
         "yoast/phpunit-polyfills": "^4.0"
     },
     "scripts": {
-        "test": "./vendor/bin/phpunit --configuration phpunit.xml --testsuite unit",
-        "test:unit": "./vendor/bin/phpunit --configuration phpunit.xml --testsuite unit",
+        "test": "./vendor/bin/phpunit --configuration phpunit.xml --testsuite \"Unit Tests\"",
+        "test:unit": "./vendor/bin/phpunit --configuration phpunit.xml --testsuite \"Unit Tests\"",
         "cs": "./vendor/bin/phpcs",
         "cbf": "./vendor/bin/phpcbf"
     },
