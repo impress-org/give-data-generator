@@ -10,5 +10,5 @@ jobs:
     build:
         uses: impress-org/givewp-github-actions/.github/workflows/addon-tests.yml@master
         with:
-            addon_slug: give-faker
+            addon_slug: give-data-generator
             givewp_branch: develop
