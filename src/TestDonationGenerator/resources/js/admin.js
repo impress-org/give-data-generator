@@ -5,132 +5,122 @@
  * @since       1.0.0
  */
 
-(function($) {
-    'use strict';
+class TestDonationGeneratorAdmin {
+    /**
+     * Initialize the admin functionality
+     */
+    init() {
+        this.bindEvents();
+    }
 
     /**
-     * Test Donation Generator Admin Object
+     * Bind event handlers
      */
-    var TestDonationGeneratorAdmin = {
+    bindEvents() {
+        // Show/hide custom date range
+        document.getElementById('date_range').addEventListener('change', this.toggleCustomDateRange);
 
-        /**
-         * Initialize the admin functionality
-         */
-        init: function() {
-            this.bindEvents();
-        },
+        // Handle form submission
+        document.getElementById('test-donation-generator-form').addEventListener('submit', this.handleFormSubmission);
+    }
 
-        /**
-         * Bind event handlers
-         */
-        bindEvents: function() {
-            // Show/hide custom date range
-            $('#date_range').on('change', this.toggleCustomDateRange);
+    /**
+     * Toggle custom date range visibility
+     */
+    toggleCustomDateRange(event) {
+        const customDateRange = document.getElementById('custom-date-range');
+        customDateRange.style.display = event.target.value === 'custom' ? 'table-row' : 'none';
+    }
 
-            // Handle form submission
-            $('#test-donation-generator-form').on('submit', this.handleFormSubmission);
-        },
+    /**
+     * Handle form submission
+     */
+    async handleFormSubmission(event) {
+        event.preventDefault();
 
-        /**
-         * Toggle custom date range visibility
-         */
-        toggleCustomDateRange: function() {
-            var $customDateRange = $('#custom-date-range');
+        const button = document.getElementById('generate-donations');
+        const spinner = document.querySelector('.spinner');
+        const results = document.getElementById('generation-results');
 
-            if ($(this).val() === 'custom') {
-                $customDateRange.show();
-            } else {
-                $customDateRange.hide();
-            }
-        },
+        // Disable form and show loading
+        button.disabled = true;
+        spinner.classList.add('is-active');
+        results.style.display = 'none';
 
-        /**
-         * Handle form submission
-         */
-        handleFormSubmission: function(e) {
-            e.preventDefault();
+        // Prepare form data
+        const formData = new URLSearchParams({
+            action: 'generate_test_donations',
+            nonce: testDonationGenerator.nonce,
+            campaign_id: document.getElementById('campaign_id').value,
+            donation_count: document.getElementById('donation_count').value,
+            date_range: document.getElementById('date_range').value,
+            donation_mode: document.getElementById('donation_mode').value,
+            start_date: document.getElementById('start_date').value,
+            end_date: document.getElementById('end_date').value
+        });
 
-            var $form = $(this);
-            var $button = $('#generate-donations');
-            var $spinner = $('.spinner');
-            var $results = $('#generation-results');
-
-            // Disable form and show loading
-            $button.prop('disabled', true);
-            $spinner.addClass('is-active');
-            $results.hide();
-
-            // Prepare form data
-            var formData = {
-                action: 'generate_test_donations',
-                nonce: testDonationGenerator.nonce,
-                campaign_id: $('#campaign_id').val(),
-                donation_count: $('#donation_count').val(),
-                date_range: $('#date_range').val(),
-                donation_mode: $('#donation_mode').val(),
-                start_date: $('#start_date').val(),
-                end_date: $('#end_date').val()
-            };
-
-            // Submit AJAX request
-            $.ajax({
-                url: testDonationGenerator.ajaxUrl,
-                type: 'POST',
-                data: formData,
-                success: TestDonationGeneratorAdmin.handleSuccess,
-                error: TestDonationGeneratorAdmin.handleError,
-                complete: TestDonationGeneratorAdmin.handleComplete
+        try {
+            // Submit fetch request
+            const response = await fetch(testDonationGenerator.ajaxUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
             });
-        },
 
-        /**
-         * Handle AJAX success response
-         */
-        handleSuccess: function(response) {
-            var $results = $('#generation-results');
-            var $resultsContent = $('#results-content');
-
-            if (response.success) {
-                $resultsContent.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-            } else {
-                $resultsContent.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-            }
-
-            $results.show();
-        },
-
-        /**
-         * Handle AJAX error response
-         */
-        handleError: function() {
-            var $results = $('#generation-results');
-            var $resultsContent = $('#results-content');
-
-            $resultsContent.html('<div class="notice notice-error"><p>' + testDonationGenerator.strings.errorMessage + '</p></div>');
-            $results.show();
-        },
-
-        /**
-         * Handle AJAX complete (always runs)
-         */
-        handleComplete: function() {
-            var $button = $('#generate-donations');
-            var $spinner = $('.spinner');
-
-            // Re-enable form
-            $button.prop('disabled', false);
-            $spinner.removeClass('is-active');
+            const data = await response.json();
+            TestDonationGeneratorAdmin.handleSuccess(data);
+        } catch (error) {
+            TestDonationGeneratorAdmin.handleError();
+        } finally {
+            TestDonationGeneratorAdmin.handleComplete();
         }
-    };
+    }
 
     /**
-     * Initialize when document is ready
+     * Handle fetch success response
      */
-    $(document).ready(function() {
-        // Only initialize if we're on the correct page
-        if ($('#test-donation-generator-form').length) {
-            TestDonationGeneratorAdmin.init();
-        }
-    });
+    static handleSuccess(response) {
+        const results = document.getElementById('generation-results');
+        const resultsContent = document.getElementById('results-content');
 
-})(jQuery);
+        resultsContent.innerHTML = response.success
+            ? `<div class="notice notice-success"><p>${response.data.message}</p></div>`
+            : `<div class="notice notice-error"><p>${response.data.message}</p></div>`;
+
+        results.style.display = 'block';
+    }
+
+    /**
+     * Handle fetch error response
+     */
+    static handleError() {
+        const results = document.getElementById('generation-results');
+        const resultsContent = document.getElementById('results-content');
+
+        resultsContent.innerHTML = `<div class="notice notice-error"><p>${testDonationGenerator.strings.errorMessage}</p></div>`;
+        results.style.display = 'block';
+    }
+
+    /**
+     * Handle fetch complete (always runs)
+     */
+    static handleComplete() {
+        const button = document.getElementById('generate-donations');
+        const spinner = document.querySelector('.spinner');
+
+        // Re-enable form
+        button.disabled = false;
+        spinner.classList.remove('is-active');
+    }
+}
+
+// Initialize when document is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Only initialize if we're on the correct page
+    if (document.getElementById('test-donation-generator-form')) {
+        const admin = new TestDonationGeneratorAdmin();
+        admin.init();
+    }
+});
