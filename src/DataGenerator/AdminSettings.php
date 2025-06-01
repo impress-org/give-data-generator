@@ -77,7 +77,6 @@ class AdminSettings
         wp_set_script_translations('data-generator-admin', 'give-data-generator');
 
         // Get campaigns and donors data
-        $campaigns = $this->getCampaigns();
         $donors = $this->getExistingDonors();
 
         // Localize script with data and strings
@@ -88,7 +87,6 @@ class AdminSettings
             'donationFormNonce' => wp_create_nonce('donation_form_generator_nonce'),
             'subscriptionNonce' => wp_create_nonce('subscription_generator_nonce'),
             'cleanupNonce' => wp_create_nonce('cleanup_nonce'),
-            'campaigns' => $campaigns,
             'donors' => $donors,
             'strings' => [
                 'errorMessage' => __('An error occurred while generating data.', 'give-data-generator'),
