@@ -3,6 +3,7 @@
 namespace GiveDataGenerator\DataGenerator;
 
 use Give\Campaigns\Models\Campaign;
+use Give\Donations\ValueObjects\DonationStatus;
 
 /**
  * Admin settings for the Data Generator.
@@ -218,6 +219,27 @@ class AdminSettings
                                 <option value="live"><?php _e('Live Mode', 'give-data-generator'); ?></option>
                             </select>
                             <p class="description"><?php _e('Choose whether donations should be created in test or live mode.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="donation_status"><?php _e('Donation Status', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <select name="donation_status" id="donation_status" class="regular-text">
+                                <option value="<?php echo DonationStatus::COMPLETE()->getValue(); ?>"><?php _e('Complete', 'give-data-generator'); ?></option>
+                                <option value="<?php echo DonationStatus::PENDING()->getValue(); ?>"><?php _e('Pending', 'give-data-generator'); ?></option>
+                                <option value="<?php echo DonationStatus::PROCESSING()->getValue(); ?>"><?php _e('Processing', 'give-data-generator'); ?></option>
+                                <option value="<?php echo DonationStatus::REFUNDED()->getValue(); ?>"><?php _e('Refunded', 'give-data-generator'); ?></option>
+                                <option value="<?php echo DonationStatus::FAILED()->getValue(); ?>"><?php _e('Failed', 'give-data-generator'); ?></option>
+                                <option value="<?php echo DonationStatus::CANCELLED()->getValue(); ?>"><?php _e('Cancelled', 'give-data-generator'); ?></option>
+                                <option value="<?php echo DonationStatus::ABANDONED()->getValue(); ?>"><?php _e('Abandoned', 'give-data-generator'); ?></option>
+                                <option value="<?php echo DonationStatus::PREAPPROVAL()->getValue(); ?>"><?php _e('Preapproval', 'give-data-generator'); ?></option>
+                                <option value="<?php echo DonationStatus::REVOKED()->getValue(); ?>"><?php _e('Revoked', 'give-data-generator'); ?></option>
+                                <option value="random"><?php _e('Random', 'give-data-generator'); ?></option>
+                            </select>
+                            <p class="description"><?php _e('Status for the generated donations. Select "Random" to use a mix of statuses.', 'give-data-generator'); ?></p>
                         </td>
                     </tr>
 

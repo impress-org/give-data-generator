@@ -86,7 +86,8 @@ class TestIntegration extends TestCase
             $this->testCampaign,
             10,
             'last_30_days',
-            'test'
+            'test',
+            'complete'
         );
 
         $this->assertEquals(10, $generated);
@@ -199,7 +200,8 @@ class TestIntegration extends TestCase
             $this->testCampaign,
             3,
             'last_30_days',
-            'test'
+            'test',
+            'complete'
         );
 
         // Generate donations for second campaign (live mode)
@@ -207,7 +209,8 @@ class TestIntegration extends TestCase
             $campaign2,
             5,
             'last_90_days',
-            'live'
+            'live',
+            'complete'
         );
 
         // Generate donations for third campaign (custom date range)
@@ -216,6 +219,7 @@ class TestIntegration extends TestCase
             2,
             'custom',
             'test',
+            'complete',
             '2024-01-01',
             '2024-01-31'
         );
@@ -260,7 +264,8 @@ class TestIntegration extends TestCase
             $this->testCampaign,
             50,
             'last_30_days',
-            'test'
+            'test',
+            'complete'
         );
 
         $donations = Donation::query()
@@ -380,7 +385,8 @@ class TestIntegration extends TestCase
             $this->testCampaign,
             100,
             'last_year',
-            'test'
+            'test',
+            'complete'
         );
 
         $endTime = microtime(true);
@@ -409,7 +415,8 @@ class TestIntegration extends TestCase
             $this->testCampaign,
             20,
             'last_90_days',
-            'live'
+            'live',
+            'complete'
         );
 
         $donations = Donation::query()

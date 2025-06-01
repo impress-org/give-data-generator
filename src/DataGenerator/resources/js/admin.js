@@ -67,6 +67,7 @@ class DataGeneratorAdmin {
             donation_count: document.getElementById('donation_count').value,
             date_range: document.getElementById('date_range').value,
             donation_mode: document.getElementById('donation_mode').value,
+            donation_status: document.getElementById('donation_status').value,
             start_date: document.getElementById('start_date').value,
             end_date: document.getElementById('end_date').value
         });

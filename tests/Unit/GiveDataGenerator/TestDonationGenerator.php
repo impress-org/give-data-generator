@@ -68,7 +68,8 @@ class TestDonationGenerator extends TestCase
             $this->testCampaign,
             $donationCount,
             'last_30_days',
-            'test'
+            'test',
+            'complete'
         );
 
         $this->assertEquals($donationCount, $generated);
@@ -92,7 +93,8 @@ class TestDonationGenerator extends TestCase
             $this->testCampaign,
             3,
             'last_30_days',
-            'test'
+            'test',
+            'complete'
         );
 
         $this->assertEquals(3, $generated);
@@ -118,7 +120,8 @@ class TestDonationGenerator extends TestCase
             $this->testCampaign,
             2,
             'last_30_days',
-            'live'
+            'live',
+            'complete'
         );
 
         $this->assertEquals(2, $generated);
@@ -147,6 +150,7 @@ class TestDonationGenerator extends TestCase
             3,
             'custom',
             'test',
+            'complete',
             $startDate,
             $endDate
         );
@@ -175,7 +179,8 @@ class TestDonationGenerator extends TestCase
             $this->testCampaign,
             2,
             'last_90_days',
-            'test'
+            'test',
+            'complete'
         );
 
         $this->assertEquals(2, $generated);
@@ -203,7 +208,8 @@ class TestDonationGenerator extends TestCase
             $this->testCampaign,
             10,
             'last_30_days',
-            'test'
+            'test',
+            'complete'
         );
 
         $donations = Donation::query()
@@ -228,7 +234,8 @@ class TestDonationGenerator extends TestCase
             $this->testCampaign,
             5,
             'last_30_days',
-            'test'
+            'test',
+            'complete'
         );
 
         $donations = Donation::query()
@@ -261,7 +268,8 @@ class TestDonationGenerator extends TestCase
             $this->testCampaign,
             20, // Generate more to ensure we get some with fees
             'last_30_days',
-            'test'
+            'test',
+            'complete'
         );
 
         $donations = Donation::query()
@@ -302,6 +310,7 @@ class TestDonationGenerator extends TestCase
             'donation_count' => 3,
             'date_range' => 'last_30_days',
             'donation_mode' => 'test',
+            'donation_status' => 'complete',
             'start_date' => '',
             'end_date' => ''
         ];
@@ -330,6 +339,7 @@ class TestDonationGenerator extends TestCase
             'donation_count' => 3,
             'date_range' => 'last_30_days',
             'donation_mode' => 'test',
+            'donation_status' => 'complete',
             'start_date' => '',
             'end_date' => ''
         ];
@@ -361,6 +371,7 @@ class TestDonationGenerator extends TestCase
             'donation_count' => 3,
             'date_range' => 'last_30_days',
             'donation_mode' => 'test',
+            'donation_status' => 'complete',
             'start_date' => '',
             'end_date' => ''
         ];
@@ -391,6 +402,7 @@ class TestDonationGenerator extends TestCase
             'donation_count' => 3,
             'date_range' => 'last_30_days',
             'donation_mode' => 'test',
+            'donation_status' => 'complete',
             'start_date' => '',
             'end_date' => ''
         ];
@@ -422,6 +434,7 @@ class TestDonationGenerator extends TestCase
             'donation_count' => 1500, // Over 1000 limit
             'date_range' => 'last_30_days',
             'donation_mode' => 'test',
+            'donation_status' => 'complete',
             'start_date' => '',
             'end_date' => ''
         ];
@@ -434,6 +447,51 @@ class TestDonationGenerator extends TestCase
 
         $this->assertFalse($response['success']);
         $this->assertEquals('Number of donations must be between 1 and 1000.', $response['data']['message']);
+    }
+
+    /**
+     * Test generation with different donation statuses.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateDonationsWithDifferentStatuses()
+    {
+        // Test that the method accepts the donation status parameter without errors
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            3,
+            'last_30_days',
+            'test',
+            'pending'
+        );
+
+        $this->assertEquals(3, $generated);
+
+        // Test with refunded status
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            2,
+            'last_30_days',
+            'test',
+            'refunded'
+        );
+
+        $this->assertEquals(2, $generated);
+
+        // Test with random status
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            1,
+            'last_30_days',
+            'test',
+            'random'
+        );
+
+        $this->assertEquals(1, $generated);
+
+        // Verify donations were created (basic count check)
+        $allDonations = Donation::query()->getAll();
+        $this->assertGreaterThanOrEqual(6, count($allDonations));
     }
 
     /**

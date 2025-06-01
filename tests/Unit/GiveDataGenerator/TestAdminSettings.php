@@ -147,6 +147,7 @@ class TestAdminSettings extends TestCase
         $this->assertStringContainsString('donation_count', $output);
         $this->assertStringContainsString('date_range', $output);
         $this->assertStringContainsString('donation_mode', $output);
+        $this->assertStringContainsString('donation_status', $output);
         $this->assertStringContainsString('Generate Test Data', $output);
     }
 
@@ -181,6 +182,7 @@ class TestAdminSettings extends TestCase
         $this->assertStringContainsString('input type="number" name="donation_count"', $output);
         $this->assertStringContainsString('select name="date_range"', $output);
         $this->assertStringContainsString('select name="donation_mode"', $output);
+        $this->assertStringContainsString('select name="donation_status"', $output);
         $this->assertStringContainsString('input type="date" name="start_date"', $output);
         $this->assertStringContainsString('input type="date" name="end_date"', $output);
     }
@@ -220,6 +222,30 @@ class TestAdminSettings extends TestCase
     }
 
     /**
+     * Test that donation status options are present.
+     *
+     * @since 1.0.0
+     */
+    public function testDonationStatusOptionsArePresent()
+    {
+        ob_start();
+        $this->adminSettings->renderAdminPage();
+        $output = ob_get_clean();
+
+        // Check for donation status options
+        $this->assertStringContainsString('Complete', $output);
+        $this->assertStringContainsString('Pending', $output);
+        $this->assertStringContainsString('Processing', $output);
+        $this->assertStringContainsString('Refunded', $output);
+        $this->assertStringContainsString('Failed', $output);
+        $this->assertStringContainsString('Cancelled', $output);
+        $this->assertStringContainsString('Abandoned', $output);
+        $this->assertStringContainsString('Preapproval', $output);
+        $this->assertStringContainsString('Revoked', $output);
+        $this->assertStringContainsString('Random', $output);
+    }
+
+    /**
      * Test that JavaScript dependencies are set up correctly.
      *
      * @since 1.0.0
@@ -235,6 +261,7 @@ class TestAdminSettings extends TestCase
         $this->assertStringContainsString('id="date_range"', $output);
         $this->assertStringContainsString('id="custom-date-range"', $output);
         $this->assertStringContainsString('id="generate-donations"', $output);
+        $this->assertStringContainsString('id="donation_status"', $output);
         $this->assertStringContainsString('class="spinner"', $output);
         $this->assertStringContainsString('id="generation-results"', $output);
 

@@ -82,6 +82,7 @@ class DonationGenerator
             $donationCount = intval($_POST['donation_count']);
             $dateRange = sanitize_text_field($_POST['date_range']);
             $donationMode = sanitize_text_field($_POST['donation_mode']);
+            $donationStatus = sanitize_text_field($_POST['donation_status']);
             $startDate = sanitize_text_field($_POST['start_date']);
             $endDate = sanitize_text_field($_POST['end_date']);
 
@@ -101,6 +102,12 @@ class DonationGenerator
                 $donationMode = 'test'; // Default to test mode
             }
 
+            // Validate donation status
+            $validStatuses = ['complete', 'pending', 'processing', 'refunded', 'failed', 'cancelled', 'abandoned', 'preapproval', 'revoked', 'random'];
+            if (!in_array($donationStatus, $validStatuses)) {
+                $donationStatus = 'complete'; // Default to complete
+            }
+
             // Get campaign
             $campaign = Campaign::find($campaignId);
             if (!$campaign) {
@@ -109,7 +116,7 @@ class DonationGenerator
             }
 
             // Generate donations
-            $generated = $this->generateDonations($campaign, $donationCount, $dateRange, $donationMode, $startDate, $endDate);
+            $generated = $this->generateDonations($campaign, $donationCount, $dateRange, $donationMode, $donationStatus, $startDate, $endDate);
 
             wp_send_json_success([
                 'message' => sprintf(
@@ -133,13 +140,14 @@ class DonationGenerator
      * @param int $count
      * @param string $dateRange
      * @param string $donationMode
+     * @param string $donationStatus
      * @param string $startDate
      * @param string $endDate
      *
      * @return int Number of donations generated
      * @throws Exception
      */
-    public function generateDonations(Campaign $campaign, int $count, string $dateRange, string $donationMode, string $startDate = '', string $endDate = ''): int
+    public function generateDonations(Campaign $campaign, int $count, string $dateRange, string $donationMode, string $donationStatus, string $startDate = '', string $endDate = ''): int
     {
         $generated = 0;
         $errors = [];
@@ -154,7 +162,7 @@ class DonationGenerator
 
         for ($i = 0; $i < $count; $i++) {
             try {
-                $this->createTestDonation($campaign, $dateInfo, $donationMode);
+                $this->createTestDonation($campaign, $dateInfo, $donationMode, $donationStatus);
                 $generated++;
                 $consecutiveErrors = 0; // Reset consecutive error counter on success
             } catch (Exception $e) {
@@ -192,10 +200,11 @@ class DonationGenerator
      * @param Campaign $campaign
      * @param array $dateInfo
      * @param string $donationMode
+     * @param string $donationStatus
      *
      * @throws Exception
      */
-    private function createTestDonation(Campaign $campaign, array $dateInfo, string $donationMode)
+    private function createTestDonation(Campaign $campaign, array $dateInfo, string $donationMode, string $donationStatus)
     {
         // Generate random donor data
         $firstName = $this->getRandomItem($this->firstNames);
@@ -216,7 +225,7 @@ class DonationGenerator
 
         // Simplified donation creation with minimal required fields
         $donationData = [
-            'status' => DonationStatus::COMPLETE(),
+            'status' => $this->getDonationStatus($donationStatus),
             'gatewayId' => 'manual',
             'mode' => new DonationMode($donationMode),
             'type' => DonationType::SINGLE(),
@@ -581,6 +590,71 @@ class DonationGenerator
         $feeAmountCents = min(round($feeAmountCents), $amount * 100 * 0.1);
 
         return new Money($feeAmountCents, give_get_currency());
+    }
+
+    /**
+     * Get donation status based on input.
+     *
+     * @since 1.0.0
+     *
+     * @param string $status Input status
+     *
+     * @return DonationStatus
+     */
+    private function getDonationStatus(string $status): DonationStatus
+    {
+        if ($status === 'random') {
+            return $this->getRandomDonationStatus();
+        }
+
+        $statuses = [
+            'complete' => DonationStatus::COMPLETE(),
+            'pending' => DonationStatus::PENDING(),
+            'processing' => DonationStatus::PROCESSING(),
+            'refunded' => DonationStatus::REFUNDED(),
+            'failed' => DonationStatus::FAILED(),
+            'cancelled' => DonationStatus::CANCELLED(),
+            'abandoned' => DonationStatus::ABANDONED(),
+            'preapproval' => DonationStatus::PREAPPROVAL(),
+            'revoked' => DonationStatus::REVOKED(),
+        ];
+
+        return $statuses[$status] ?? DonationStatus::COMPLETE();
+    }
+
+    /**
+     * Get random donation status with weighted distribution.
+     *
+     * @since 1.0.0
+     *
+     * @return DonationStatus
+     */
+    private function getRandomDonationStatus(): DonationStatus
+    {
+        // Weighted distribution - completed donations are most common
+        $weightedStatuses = [
+            ['status' => DonationStatus::COMPLETE(), 'weight' => 70],    // 70% chance
+            ['status' => DonationStatus::PENDING(), 'weight' => 15],     // 15% chance
+            ['status' => DonationStatus::PROCESSING(), 'weight' => 5],   // 5% chance
+            ['status' => DonationStatus::FAILED(), 'weight' => 4],       // 4% chance
+            ['status' => DonationStatus::CANCELLED(), 'weight' => 2],    // 2% chance
+            ['status' => DonationStatus::REFUNDED(), 'weight' => 2],     // 2% chance
+            ['status' => DonationStatus::ABANDONED(), 'weight' => 1],    // 1% chance
+            ['status' => DonationStatus::PREAPPROVAL(), 'weight' => 1],  // 1% chance
+        ];
+
+        $rand = mt_rand(1, 100);
+        $cumulative = 0;
+
+        foreach ($weightedStatuses as $item) {
+            $cumulative += $item['weight'];
+            if ($rand <= $cumulative) {
+                return $item['status'];
+            }
+        }
+
+        // Fallback
+        return DonationStatus::COMPLETE();
     }
 }
 
