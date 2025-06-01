@@ -23,6 +23,12 @@ class DataGeneratorAdmin {
             dateRangeSelect.addEventListener('change', this.toggleCustomDateRange);
         }
 
+        // Show/hide custom date range for subscriptions tab
+        const subscriptionDateRangeSelect = document.getElementById('subscription_date_range');
+        if (subscriptionDateRangeSelect) {
+            subscriptionDateRangeSelect.addEventListener('change', this.toggleSubscriptionCustomDateRange);
+        }
+
         // Handle donation form submission
         const donationForm = document.getElementById('donation-generator-form');
         if (donationForm) {
@@ -34,13 +40,27 @@ class DataGeneratorAdmin {
         if (campaignForm) {
             campaignForm.addEventListener('submit', this.handleCampaignFormSubmission);
         }
+
+        // Handle subscription form submission
+        const subscriptionForm = document.getElementById('subscription-generator-form');
+        if (subscriptionForm) {
+            subscriptionForm.addEventListener('submit', this.handleSubscriptionFormSubmission);
+        }
     }
 
     /**
-     * Toggle custom date range visibility
+     * Toggle custom date range visibility for donations
      */
     toggleCustomDateRange(event) {
         const customDateRange = document.getElementById('custom-date-range');
+        customDateRange.style.display = event.target.value === 'custom' ? 'table-row' : 'none';
+    }
+
+    /**
+     * Toggle custom date range visibility for subscriptions
+     */
+    toggleSubscriptionCustomDateRange(event) {
+        const customDateRange = document.getElementById('subscription-custom-date-range');
         customDateRange.style.display = event.target.value === 'custom' ? 'table-row' : 'none';
     }
 
@@ -143,6 +163,57 @@ class DataGeneratorAdmin {
     }
 
     /**
+     * Handle subscription form submission
+     */
+    async handleSubscriptionFormSubmission(event) {
+        event.preventDefault();
+
+        const button = document.getElementById('generate-subscriptions');
+        const spinner = document.querySelector('#subscriptions-panel .spinner');
+        const results = document.getElementById('subscription-generation-results');
+
+        // Disable form and show loading
+        button.disabled = true;
+        spinner.classList.add('is-active');
+        results.style.display = 'none';
+
+        // Prepare form data
+        const formData = new URLSearchParams({
+            action: 'generate_test_subscriptions',
+            nonce: dataGenerator.subscriptionNonce,
+            campaign_id: document.getElementById('subscription_campaign_id').value,
+            subscription_count: document.getElementById('subscription_count').value,
+            date_range: document.getElementById('subscription_date_range').value,
+            subscription_mode: document.getElementById('subscription_mode').value,
+            subscription_status: document.getElementById('subscription_status').value,
+            subscription_period: document.getElementById('subscription_period').value,
+            frequency: document.getElementById('subscription_frequency').value,
+            installments: document.getElementById('subscription_installments').value,
+            renewals_count: document.getElementById('subscription_renewals_count').value,
+            start_date: document.getElementById('subscription_start_date').value,
+            end_date: document.getElementById('subscription_end_date').value
+        });
+
+        try {
+            // Submit fetch request
+            const response = await fetch(dataGenerator.ajaxUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            DataGeneratorAdmin.handleSuccess(data, 'subscription-generation-results', 'subscription-results-content');
+        } catch (error) {
+            DataGeneratorAdmin.handleError('subscription-generation-results', 'subscription-results-content');
+        } finally {
+            DataGeneratorAdmin.handleComplete('generate-subscriptions', '#subscriptions-panel .spinner');
+        }
+    }
+
+    /**
      * Handle fetch success response
      */
     static handleSuccess(response, resultsId, contentId) {
@@ -183,7 +254,9 @@ class DataGeneratorAdmin {
 // Initialize when document is ready
 document.addEventListener('DOMContentLoaded', () => {
     // Only initialize if we're on the correct page
-    if (document.getElementById('donation-generator-form') || document.getElementById('campaign-generator-form')) {
+    if (document.getElementById('donation-generator-form') ||
+        document.getElementById('campaign-generator-form') ||
+        document.getElementById('subscription-generator-form')) {
         const admin = new DataGeneratorAdmin();
         admin.init();
     }

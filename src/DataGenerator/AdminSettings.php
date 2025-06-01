@@ -4,6 +4,8 @@ namespace GiveDataGenerator\DataGenerator;
 
 use Give\Campaigns\Models\Campaign;
 use Give\Donations\ValueObjects\DonationStatus;
+use Give\Subscriptions\ValueObjects\SubscriptionStatus;
+use Give\Subscriptions\ValueObjects\SubscriptionPeriod;
 
 /**
  * Admin settings for the Data Generator.
@@ -22,6 +24,7 @@ class AdminSettings
     private array $tabs = [
         'donations' => 'Donations',
         'campaigns' => 'Campaigns',
+        'subscriptions' => 'Subscriptions',
     ];
 
     /**
@@ -141,6 +144,9 @@ class AdminSettings
                 break;
             case 'campaigns':
                 $this->renderCampaignsTab();
+                break;
+            case 'subscriptions':
+                $this->renderSubscriptionsTab();
                 break;
             default:
                 $this->renderDonationsTab();
@@ -427,6 +433,177 @@ class AdminSettings
             <div id="campaign-generation-results" style="display: none;">
                 <h3><?php _e('Generation Results', 'give-data-generator'); ?></h3>
                 <div id="campaign-results-content"></div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render the subscriptions tab content.
+     *
+     * @since 1.0.0
+     */
+    private function renderSubscriptionsTab(): void
+    {
+        $campaigns = $this->getCampaigns();
+
+        // Ensure $campaigns is always an array
+        if (!is_array($campaigns)) {
+            $campaigns = [];
+        }
+        ?>
+        <div class="tab-panel" id="subscriptions-panel">
+            <form id="subscription-generator-form" method="post">
+                <?php wp_nonce_field('subscription_generator_nonce', 'subscription_generator_nonce'); ?>
+
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="subscription_campaign_id"><?php _e('Campaign', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <select name="campaign_id" id="subscription_campaign_id" class="regular-text">
+                                <option value=""><?php _e('Select a Campaign', 'give-data-generator'); ?></option>
+                                <?php foreach ($campaigns as $campaign): ?>
+                                    <option value="<?php echo esc_attr($campaign->id); ?>">
+                                        <?php echo esc_html($campaign->title); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description"><?php _e('Choose which campaign the test subscriptions should be associated with.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="subscription_count"><?php _e('Number of Subscriptions', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="subscription_count" id="subscription_count" class="regular-text" min="1" max="1000" value="10" />
+                            <p class="description"><?php _e('How many test subscriptions to generate (1-1000).', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="subscription_date_range"><?php _e('Date Range', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <select name="date_range" id="subscription_date_range" class="regular-text">
+                                <option value="last_30_days"><?php _e('Last 30 Days', 'give-data-generator'); ?></option>
+                                <option value="last_90_days"><?php _e('Last 90 Days', 'give-data-generator'); ?></option>
+                                <option value="last_year"><?php _e('Last Year', 'give-data-generator'); ?></option>
+                                <option value="custom"><?php _e('Custom Range', 'give-data-generator'); ?></option>
+                            </select>
+                            <p class="description"><?php _e('Timeframe within which subscriptions should be created.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="subscription_mode"><?php _e('Subscription Mode', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <select name="subscription_mode" id="subscription_mode" class="regular-text">
+                                <option value="test"><?php _e('Test Mode', 'give-data-generator'); ?></option>
+                                <option value="live"><?php _e('Live Mode', 'give-data-generator'); ?></option>
+                            </select>
+                            <p class="description"><?php _e('Choose whether subscriptions should be created in test or live mode.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="subscription_status"><?php _e('Subscription Status', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <select name="subscription_status" id="subscription_status" class="regular-text">
+                                <option value="<?php echo SubscriptionStatus::PENDING()->getValue(); ?>"><?php _e('Pending', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionStatus::ACTIVE()->getValue(); ?>" selected><?php _e('Active', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionStatus::EXPIRED()->getValue(); ?>"><?php _e('Expired', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionStatus::COMPLETED()->getValue(); ?>"><?php _e('Completed', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionStatus::REFUNDED()->getValue(); ?>"><?php _e('Refunded', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionStatus::FAILING()->getValue(); ?>"><?php _e('Failing', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionStatus::CANCELLED()->getValue(); ?>"><?php _e('Cancelled', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionStatus::ABANDONED()->getValue(); ?>"><?php _e('Abandoned', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionStatus::SUSPENDED()->getValue(); ?>"><?php _e('Suspended', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionStatus::PAUSED()->getValue(); ?>"><?php _e('Paused', 'give-data-generator'); ?></option>
+                                <option value="random"><?php _e('Random', 'give-data-generator'); ?></option>
+                            </select>
+                            <p class="description"><?php _e('Status for the generated subscriptions. Select "Random" to use a mix of statuses.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="subscription_period"><?php _e('Billing Period', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <select name="subscription_period" id="subscription_period" class="regular-text">
+                                <option value="<?php echo SubscriptionPeriod::DAY()->getValue(); ?>"><?php _e('Daily', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionPeriod::WEEK()->getValue(); ?>"><?php _e('Weekly', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionPeriod::MONTH()->getValue(); ?>" selected><?php _e('Monthly', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionPeriod::QUARTER()->getValue(); ?>"><?php _e('Quarterly', 'give-data-generator'); ?></option>
+                                <option value="<?php echo SubscriptionPeriod::YEAR()->getValue(); ?>"><?php _e('Yearly', 'give-data-generator'); ?></option>
+                            </select>
+                            <p class="description"><?php _e('The billing period for subscriptions.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="subscription_frequency"><?php _e('Frequency', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="frequency" id="subscription_frequency" class="regular-text" min="1" max="12" value="1" />
+                            <p class="description"><?php _e('How often the subscription should bill within the period (e.g., every 2 months = frequency 2 with monthly period).', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="subscription_installments"><?php _e('Installments', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="installments" id="subscription_installments" class="regular-text" min="0" max="100" value="0" />
+                            <p class="description"><?php _e('Total number of payments before subscription ends. Set to 0 for unlimited/indefinite subscriptions.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="subscription_renewals_count"><?php _e('Renewals per Subscription', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="renewals_count" id="subscription_renewals_count" class="regular-text" min="0" max="50" value="0" />
+                            <p class="description"><?php _e('Number of renewal payments to generate for each subscription (0-50). This creates historical renewal data.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr id="subscription-custom-date-range" style="display: none;">
+                        <th scope="row">
+                            <label><?php _e('Custom Date Range', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <input type="date" name="start_date" id="subscription_start_date" class="regular-text" />
+                            <span> <?php _e('to', 'give-data-generator'); ?> </span>
+                            <input type="date" name="end_date" id="subscription_end_date" class="regular-text" />
+                            <p class="description"><?php _e('Select the start and end dates for the subscription generation.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+                </table>
+
+                <p class="submit">
+                    <button type="submit" class="button button-primary" id="generate-subscriptions">
+                        <?php _e('Generate Test Subscriptions', 'give-data-generator'); ?>
+                    </button>
+                    <span class="spinner" style="float: none; margin-left: 10px;"></span>
+                </p>
+            </form>
+
+            <div id="subscription-generation-results" style="display: none;">
+                <h3><?php _e('Generation Results', 'give-data-generator'); ?></h3>
+                <div id="subscription-results-content"></div>
             </div>
         </div>
         <?php
