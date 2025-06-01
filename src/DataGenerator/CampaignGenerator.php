@@ -9,6 +9,7 @@ use Give\Campaigns\ValueObjects\CampaignGoalType;
 use Give\Campaigns\ValueObjects\CampaignStatus;
 use Give\Campaigns\ValueObjects\CampaignType;
 use Give\Campaigns\Actions\CreateDefaultCampaignForm;
+use Give\Campaigns\ValueObjects\CampaignPageStatus;
 
 /**
  * Campaign Generator.
@@ -322,6 +323,12 @@ class CampaignGenerator
             } catch (Exception $e) {
                 error_log('Campaign Generator: Failed to create form for campaign ' . $campaign->id . ': ' . $e->getMessage());
             }
+        }
+
+        // Set campaign page status to publish
+        if ($campaign->id && $page = $campaign->page()) {
+            $page->status = CampaignPageStatus::PUBLISH();
+            $page->save();
         }
     }
 
