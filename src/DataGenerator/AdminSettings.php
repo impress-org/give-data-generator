@@ -66,7 +66,7 @@ class AdminSettings
     public function renderAdminPage(): void
     {
         $this->currentTab = $this->getCurrentTab();
-        ?>
+?>
         <div class="wrap">
             <h1><?php _e('Data Generator', 'give-data-generator'); ?></h1>
 
@@ -83,7 +83,7 @@ class AdminSettings
             <?php $this->renderTabStyles(); ?>
             <?php $this->renderTabScripts(); ?>
         </div>
-        <?php
+    <?php
     }
 
     /**
@@ -106,16 +106,16 @@ class AdminSettings
      */
     private function renderTabs(): void
     {
-        ?>
+    ?>
         <nav class="nav-tab-wrapper">
             <?php foreach ($this->tabs as $tabKey => $tabLabel): ?>
                 <a href="<?php echo esc_url($this->getTabUrl($tabKey)); ?>"
-                   class="nav-tab <?php echo $this->currentTab === $tabKey ? 'nav-tab-active' : ''; ?>">
+                    class="nav-tab <?php echo $this->currentTab === $tabKey ? 'nav-tab-active' : ''; ?>">
                     <?php echo esc_html(__($tabLabel, 'give-data-generator')); ?>
                 </a>
             <?php endforeach; ?>
         </nav>
-        <?php
+    <?php
     }
 
     /**
@@ -173,7 +173,7 @@ class AdminSettings
         if (!is_array($campaigns)) {
             $campaigns = [];
         }
-        ?>
+    ?>
         <div class="tab-panel" id="donations-panel">
             <form id="donation-generator-form" method="post">
                 <?php wp_nonce_field('data_generator_nonce', 'data_generator_nonce'); ?>
@@ -315,7 +315,7 @@ class AdminSettings
                 <div id="results-content"></div>
             </div>
         </div>
-        <?php
+    <?php
     }
 
     /**
@@ -325,7 +325,7 @@ class AdminSettings
      */
     private function renderCampaignsTab(): void
     {
-        ?>
+    ?>
         <div class="tab-panel" id="campaigns-panel">
             <form id="campaign-generator-form" method="post">
                 <?php wp_nonce_field('campaign_generator_nonce', 'campaign_generator_nonce'); ?>
@@ -467,10 +467,10 @@ class AdminSettings
                         </th>
                         <td>
                             <select name="image_source" id="image_source" class="regular-text">
-                                <option value="none"><?php _e('No Images', 'give-data-generator'); ?></option>
-                                <option value="openverse"><?php _e('Openverse (Open Licensed)', 'give-data-generator'); ?></option>
                                 <option value="lorem_picsum"><?php _e('Lorem Picsum (Random)', 'give-data-generator'); ?></option>
+                                <option value="openverse"><?php _e('Openverse (Open Licensed)', 'give-data-generator'); ?></option>
                                 <option value="random"><?php _e('Random (All Sources)', 'give-data-generator'); ?></option>
+                                <option value="none"><?php _e('No Images', 'give-data-generator'); ?></option>
                             </select>
                             <p class="description">
                                 <?php _e('Choose where to fetch campaign images from. Images will be downloaded and uploaded to your WordPress media library.', 'give-data-generator'); ?>
@@ -496,7 +496,7 @@ class AdminSettings
                 <div id="campaign-results-content"></div>
             </div>
         </div>
-        <?php
+    <?php
     }
 
     /**
@@ -512,7 +512,7 @@ class AdminSettings
         if (!is_array($campaigns)) {
             $campaigns = [];
         }
-        ?>
+    ?>
         <div class="tab-panel" id="subscriptions-panel">
             <form id="subscription-generator-form" method="post">
                 <?php wp_nonce_field('subscription_generator_nonce', 'subscription_generator_nonce'); ?>
@@ -667,7 +667,7 @@ class AdminSettings
                 <div id="subscription-results-content"></div>
             </div>
         </div>
-        <?php
+    <?php
     }
 
     /**
@@ -677,7 +677,7 @@ class AdminSettings
      */
     private function renderCleanUpTab(): void
     {
-        ?>
+    ?>
         <div class="tab-panel" id="cleanup-panel">
             <div class="notice notice-warning">
                 <p><strong><?php _e('Warning:', 'give-data-generator'); ?></strong> <?php _e('These actions are permanent and cannot be undone. Please ensure you have a backup before proceeding.', 'give-data-generator'); ?></p>
@@ -686,32 +686,32 @@ class AdminSettings
             <div class="cleanup-actions">
                 <div class="cleanup-action-card">
                     <h3><?php _e('Delete Test Mode Donations', 'give-data-generator'); ?></h3>
-                    <p><?php _e('This will permanently delete all donations that were made in test mode.', 'give-data-generator'); ?></p>
+                    <p><?php _e('This will permanently delete all donations that were made in test mode, including their related donors.', 'give-data-generator'); ?></p>
                     <button type="button" class="button button-secondary cleanup-button"
-                            data-action="delete_test_donations"
-                            id="delete-test-donations">
+                        data-action="delete_test_donations"
+                        id="delete-test-donations">
                         <?php _e('Delete Test Donations', 'give-data-generator'); ?>
                     </button>
-                    <span class="spinner cleanup-spinner" id="delete-donations-spinner" style="float: none; margin-left: 10px;"></span>
+                    <span class="spinner cleanup-spinner" id="delete-test-donations-spinner" style="float: none; margin-left: 10px;"></span>
                 </div>
 
                 <div class="cleanup-action-card">
                     <h3><?php _e('Delete Test Mode Subscriptions', 'give-data-generator'); ?></h3>
                     <p><?php _e('This will permanently delete all subscriptions that were created in test mode, along with their related donations.', 'give-data-generator'); ?></p>
                     <button type="button" class="button button-secondary cleanup-button"
-                            data-action="delete_test_subscriptions"
-                            id="delete-test-subscriptions">
+                        data-action="delete_test_subscriptions"
+                        id="delete-test-subscriptions">
                         <?php _e('Delete Test Subscriptions', 'give-data-generator'); ?>
                     </button>
-                    <span class="spinner cleanup-spinner" id="delete-subscriptions-spinner" style="float: none; margin-left: 10px;"></span>
+                    <span class="spinner cleanup-spinner" id="delete-test-subscriptions-spinner" style="float: none; margin-left: 10px;"></span>
                 </div>
 
                 <div class="cleanup-action-card">
                     <h3><?php _e('Archive All Campaigns', 'give-data-generator'); ?></h3>
                     <p><?php _e('This will archive all active campaigns. Archived campaigns will no longer be accessible for donations.', 'give-data-generator'); ?></p>
                     <button type="button" class="button button-secondary cleanup-button"
-                            data-action="archive_campaigns"
-                            id="archive-campaigns">
+                        data-action="archive_campaigns"
+                        id="archive-campaigns">
                         <?php _e('Archive Campaigns', 'give-data-generator'); ?>
                     </button>
                     <span class="spinner cleanup-spinner" id="archive-campaigns-spinner" style="float: none; margin-left: 10px;"></span>
@@ -737,7 +737,7 @@ class AdminSettings
                 border: 1px solid #c3c4c7;
                 border-radius: 5px;
                 padding: 20px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
 
             .cleanup-action-card h3 {
@@ -780,7 +780,7 @@ class AdminSettings
                 border-radius: 5px;
             }
         </style>
-        <?php
+    <?php
     }
 
     /**
@@ -790,7 +790,7 @@ class AdminSettings
      */
     private function renderTabStyles(): void
     {
-        ?>
+    ?>
         <style>
             .tab-content {
                 margin-top: 20px;
@@ -809,7 +809,7 @@ class AdminSettings
                 margin-bottom: -1px;
             }
         </style>
-        <?php
+    <?php
     }
 
     /**
@@ -819,7 +819,7 @@ class AdminSettings
      */
     private function renderTabScripts(): void
     {
-        ?>
+    ?>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 // Handle date range selection for donations tab
@@ -863,7 +863,7 @@ class AdminSettings
                 }
             });
         </script>
-        <?php
+<?php
     }
 
     /**
@@ -876,7 +876,7 @@ class AdminSettings
     {
         try {
             $campaigns = Campaign::query()
-                ->where('status', CampaignStatus::ACTIVE)
+                ->where('status', CampaignStatus::ACTIVE())
                 ->getAll();
 
             // Ensure we always return an array

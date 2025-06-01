@@ -5,6 +5,7 @@ namespace GiveDataGenerator\DataGenerator;
 use Give\Donations\Models\Donation;
 use Give\Subscriptions\Models\Subscription;
 use Give\Campaigns\Models\Campaign;
+use Give\Campaigns\ValueObjects\CampaignPageStatus;
 use Give\Campaigns\ValueObjects\CampaignStatus;
 use Give\Donations\ValueObjects\DonationMode;
 use Give\Subscriptions\ValueObjects\SubscriptionMode;
@@ -85,6 +86,9 @@ class CleanUpManager
                 try {
                     // Use GiveWP's built-in deletion method which handles all related data
                     $donation->delete();
+                    if ($donation->donor) {
+                        $donation->donor->delete();
+                    }
                     $deletedCount++;
                 } catch (\Exception $e) {
                     $errors[] = sprintf(
@@ -177,27 +181,47 @@ class CleanUpManager
     private function archiveCampaigns(): array
     {
         try {
-            // Get all active campaigns using string value
+            // Get all active campaigns - try multiple approaches to ensure compatibility
             $campaigns = Campaign::query()
-                ->where('status', 'active')
+                ->where('status', CampaignStatus::ACTIVE())
                 ->getAll();
+
+            // Fallback to string-based query if enum query doesn't work
+            if (!is_array($campaigns) || count($campaigns) === 0) {
+                $campaigns = Campaign::query()
+                    ->where('status', 'active')
+                    ->getAll();
+            }
+
+            // Final fallback using getValue() method
+            if (!is_array($campaigns) || count($campaigns) === 0) {
+                $activeStatus = CampaignStatus::ACTIVE();
+                $campaigns = Campaign::query()
+                    ->where('status', $activeStatus->getValue())
+                    ->getAll();
+            }
 
             $archivedCount = 0;
             $errors = [];
 
-            // Handle null result
-            if ($campaigns === null) {
+            // Ensure we have an array to work with
+            if (!is_array($campaigns)) {
                 $campaigns = [];
             }
 
-            // Log the number of campaigns found
-            error_log('CleanUpManager: Found ' . count($campaigns) . ' active campaigns to archive');
-
             foreach ($campaigns as $campaign) {
                 try {
-                    // Update campaign status to archived using the proper value object
+                    // Update campaign status to archived
                     $campaign->status = CampaignStatus::ARCHIVED();
                     $campaign->save();
+
+                    if ($page = $campaign->page()) {
+                        $page->status = CampaignPageStatus::TRASH();
+                        $page->save();
+
+                        wp_trash_post($page->id);
+                    }
+
                     $archivedCount++;
                 } catch (\Exception $e) {
                     $errors[] = sprintf(
