@@ -12,6 +12,7 @@ import {
     FlexItem
 } from '@wordpress/components';
 import { useEntityRecords } from '@wordpress/core-data';
+import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { ApiResponse, ResultState, Campaign, Donor } from '../../types';
 import dataGenerator from '../../common/getWindowData';
 
@@ -47,23 +48,38 @@ const DonationsTab: React.FC = () => {
         }
     }, [campaignRecords, isCampaignsResolved]);
 
-    const [formData, setFormData] = useState<DonationFormData>({
-        campaign_id: '',
-        donor_creation_method: 'create_new',
-        selected_donor_id: '',
-        donation_count: 10,
-        date_range: 'last_30_days',
-        start_date: '',
-        end_date: '',
-        donation_mode: 'test',
-        donation_status: 'complete'
-    });
-
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [result, setResult] = useState<ResultState | null>(null);
 
     // Get campaigns and donors from the global dataGenerator object
     const donors: Donor[] = dataGenerator?.donors || [];
+
+    // Initialize react-hook-form
+    const {
+        control,
+        handleSubmit,
+        watch,
+        formState: { errors },
+        setError,
+        clearErrors
+    } = useForm<DonationFormData>({
+        defaultValues: {
+            campaign_id: '',
+            donor_creation_method: 'create_new',
+            selected_donor_id: '',
+            donation_count: 10,
+            date_range: 'last_30_days',
+            start_date: '',
+            end_date: '',
+            donation_mode: 'test',
+            donation_status: 'complete'
+        },
+        mode: 'onSubmit'
+    });
+
+    // Watch specific fields for conditional rendering
+    const watchedDonorMethod = watch('donor_creation_method');
+    const watchedDateRange = watch('date_range');
 
     // Prepare campaign options for SelectControl
     const campaignOptions: SelectOption[] = !isCampaignsResolved ? [
@@ -85,30 +101,40 @@ const DonationsTab: React.FC = () => {
         }))
     ];
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
-        e.preventDefault();
+    const onSubmit: SubmitHandler<DonationFormData> = async (formData): Promise<void> => {
+        // Clear any previous errors
+        clearErrors();
 
+        // Custom validation
         if (!formData.campaign_id) {
-            setResult({
-                success: false,
+            setError('campaign_id', {
+                type: 'required',
                 message: __('Please select a campaign', 'give-data-generator')
             });
             return;
         }
 
         if (formData.donor_creation_method === 'select_specific' && !formData.selected_donor_id) {
-            setResult({
-                success: false,
+            setError('selected_donor_id', {
+                type: 'required',
                 message: __('Please select a specific donor', 'give-data-generator')
             });
             return;
         }
 
         if (formData.date_range === 'custom' && (!formData.start_date || !formData.end_date)) {
-            setResult({
-                success: false,
-                message: __('Please select both start and end dates for custom range', 'give-data-generator')
-            });
+            if (!formData.start_date) {
+                setError('start_date', {
+                    type: 'required',
+                    message: __('Please select a start date', 'give-data-generator')
+                });
+            }
+            if (!formData.end_date) {
+                setError('end_date', {
+                    type: 'required',
+                    message: __('Please select an end date', 'give-data-generator')
+                });
+            }
             return;
         }
 
@@ -147,14 +173,10 @@ const DonationsTab: React.FC = () => {
         }
     };
 
-    const handleFieldChange = (field: keyof DonationFormData, value: DonationFormData[keyof DonationFormData]): void => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
     return (
         <Card>
             <CardBody>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit(onSubmit)}>
                     <table className="form-table">
                         <tbody>
                             <tr>
@@ -162,11 +184,23 @@ const DonationsTab: React.FC = () => {
                                     <label>{__('Campaign', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.campaign_id}
-                                        onChange={(value: string) => handleFieldChange('campaign_id', value)}
-                                        options={campaignOptions}
+                                    <Controller
+                                        name="campaign_id"
+                                        control={control}
+                                        rules={{ required: __('Please select a campaign', 'give-data-generator') }}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={campaignOptions}
+                                            />
+                                        )}
                                     />
+                                    {errors.campaign_id && (
+                                        <p className="description" style={{ color: '#d63638' }}>
+                                            {errors.campaign_id.message}
+                                        </p>
+                                    )}
                                     <p className="description">
                                         {__('Choose which campaign the test donations should be associated with.', 'give-data-generator')}
                                     </p>
@@ -183,15 +217,21 @@ const DonationsTab: React.FC = () => {
                                     <label>{__('Donor Selection', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.donor_creation_method}
-                                        onChange={(value: string) => handleFieldChange('donor_creation_method', value)}
-                                        options={[
-                                            { label: __('Create New Donors', 'give-data-generator'), value: 'create_new' },
-                                            { label: __('Use Existing Donors', 'give-data-generator'), value: 'use_existing' },
-                                            { label: __('Mix of New and Existing', 'give-data-generator'), value: 'mixed' },
-                                            { label: __('Select Specific Donor', 'give-data-generator'), value: 'select_specific' }
-                                        ]}
+                                    <Controller
+                                        name="donor_creation_method"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={[
+                                                    { label: __('Create New Donors', 'give-data-generator'), value: 'create_new' },
+                                                    { label: __('Use Existing Donors', 'give-data-generator'), value: 'use_existing' },
+                                                    { label: __('Mix of New and Existing', 'give-data-generator'), value: 'mixed' },
+                                                    { label: __('Select Specific Donor', 'give-data-generator'), value: 'select_specific' }
+                                                ]}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
                                         {__('Choose whether to create new donors for each donation or use existing donors from your database.', 'give-data-generator')}
@@ -199,17 +239,33 @@ const DonationsTab: React.FC = () => {
                                 </td>
                             </tr>
 
-                            {formData.donor_creation_method === 'select_specific' && (
+                            {watchedDonorMethod === 'select_specific' && (
                                 <tr>
                                     <th scope="row">
                                         <label>{__('Select Donor', 'give-data-generator')}</label>
                                     </th>
                                     <td>
-                                        <SelectControl
-                                            value={formData.selected_donor_id}
-                                            onChange={(value: string) => handleFieldChange('selected_donor_id', value)}
-                                            options={donorOptions}
+                                        <Controller
+                                            name="selected_donor_id"
+                                            control={control}
+                                            rules={{
+                                                required: watchedDonorMethod === 'select_specific'
+                                                    ? __('Please select a specific donor', 'give-data-generator')
+                                                    : false
+                                            }}
+                                            render={({ field }) => (
+                                                <SelectControl
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    options={donorOptions}
+                                                />
+                                            )}
                                         />
+                                        {errors.selected_donor_id && (
+                                            <p className="description" style={{ color: '#d63638' }}>
+                                                {errors.selected_donor_id.message}
+                                            </p>
+                                        )}
                                         <p className="description">
                                             {__('Select a specific donor to use for all generated donations.', 'give-data-generator')}
                                         </p>
@@ -227,13 +283,29 @@ const DonationsTab: React.FC = () => {
                                     <label>{__('Number of Donations', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <TextControl
-                                        type="number"
-                                        value={formData.donation_count}
-                                        onChange={(value: string) => handleFieldChange('donation_count', parseInt(value) || 1)}
-                                        min={1}
-                                        max={1000}
+                                    <Controller
+                                        name="donation_count"
+                                        control={control}
+                                        rules={{
+                                            required: __('Donation count is required', 'give-data-generator'),
+                                            min: { value: 1, message: __('Minimum 1 donation required', 'give-data-generator') },
+                                            max: { value: 1000, message: __('Maximum 1000 donations allowed', 'give-data-generator') }
+                                        }}
+                                        render={({ field }) => (
+                                            <TextControl
+                                                type="number"
+                                                value={String(field.value)}
+                                                onChange={(value: string) => field.onChange(parseInt(value) || 1)}
+                                                min={1}
+                                                max={1000}
+                                            />
+                                        )}
                                     />
+                                    {errors.donation_count && (
+                                        <p className="description" style={{ color: '#d63638' }}>
+                                            {errors.donation_count.message}
+                                        </p>
+                                    )}
                                     <p className="description">
                                         {__('How many test donations to generate (1-1000).', 'give-data-generator')}
                                     </p>
@@ -245,15 +317,21 @@ const DonationsTab: React.FC = () => {
                                     <label>{__('Date Range', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.date_range}
-                                        onChange={(value: string) => handleFieldChange('date_range', value)}
-                                        options={[
-                                            { label: __('Last 30 Days', 'give-data-generator'), value: 'last_30_days' },
-                                            { label: __('Last 90 Days', 'give-data-generator'), value: 'last_90_days' },
-                                            { label: __('Last Year', 'give-data-generator'), value: 'last_year' },
-                                            { label: __('Custom Date Range', 'give-data-generator'), value: 'custom' }
-                                        ]}
+                                    <Controller
+                                        name="date_range"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={[
+                                                    { label: __('Last 30 Days', 'give-data-generator'), value: 'last_30_days' },
+                                                    { label: __('Last 90 Days', 'give-data-generator'), value: 'last_90_days' },
+                                                    { label: __('Last Year', 'give-data-generator'), value: 'last_year' },
+                                                    { label: __('Custom Date Range', 'give-data-generator'), value: 'custom' }
+                                                ]}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
                                         {__('Timeframe within which donations should be created.', 'give-data-generator')}
@@ -261,7 +339,7 @@ const DonationsTab: React.FC = () => {
                                 </td>
                             </tr>
 
-                            {formData.date_range === 'custom' && (
+                            {watchedDateRange === 'custom' && (
                                 <tr>
                                     <th scope="row">
                                         <label>{__('Custom Date Range', 'give-data-generator')}</label>
@@ -269,21 +347,53 @@ const DonationsTab: React.FC = () => {
                                     <td>
                                         <Flex gap={2} align="center">
                                             <FlexItem>
-                                                <TextControl
-                                                    type="date"
-                                                    value={formData.start_date}
-                                                    onChange={(value: string) => handleFieldChange('start_date', value)}
+                                                <Controller
+                                                    name="start_date"
+                                                    control={control}
+                                                    rules={{
+                                                        required: watchedDateRange === 'custom'
+                                                            ? __('Please select a start date', 'give-data-generator')
+                                                            : false
+                                                    }}
+                                                    render={({ field }) => (
+                                                        <TextControl
+                                                            type="date"
+                                                            value={field.value}
+                                                            onChange={field.onChange}
+                                                        />
+                                                    )}
                                                 />
+                                                {errors.start_date && (
+                                                    <p className="description" style={{ color: '#d63638', fontSize: '12px' }}>
+                                                        {errors.start_date.message}
+                                                    </p>
+                                                )}
                                             </FlexItem>
                                             <FlexItem>
                                                 {__('to', 'give-data-generator')}
                                             </FlexItem>
                                             <FlexItem>
-                                                <TextControl
-                                                    type="date"
-                                                    value={formData.end_date}
-                                                    onChange={(value: string) => handleFieldChange('end_date', value)}
+                                                <Controller
+                                                    name="end_date"
+                                                    control={control}
+                                                    rules={{
+                                                        required: watchedDateRange === 'custom'
+                                                            ? __('Please select an end date', 'give-data-generator')
+                                                            : false
+                                                    }}
+                                                    render={({ field }) => (
+                                                        <TextControl
+                                                            type="date"
+                                                            value={field.value}
+                                                            onChange={field.onChange}
+                                                        />
+                                                    )}
                                                 />
+                                                {errors.end_date && (
+                                                    <p className="description" style={{ color: '#d63638', fontSize: '12px' }}>
+                                                        {errors.end_date.message}
+                                                    </p>
+                                                )}
                                             </FlexItem>
                                         </Flex>
                                         <p className="description">
@@ -298,13 +408,19 @@ const DonationsTab: React.FC = () => {
                                     <label>{__('Donation Mode', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.donation_mode}
-                                        onChange={(value: string) => handleFieldChange('donation_mode', value)}
-                                        options={[
-                                            { label: __('Test Mode', 'give-data-generator'), value: 'test' },
-                                            { label: __('Live Mode', 'give-data-generator'), value: 'live' }
-                                        ]}
+                                    <Controller
+                                        name="donation_mode"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={[
+                                                    { label: __('Test Mode', 'give-data-generator'), value: 'test' },
+                                                    { label: __('Live Mode', 'give-data-generator'), value: 'live' }
+                                                ]}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
                                         {__('Choose whether donations should be created in test or live mode.', 'give-data-generator')}
@@ -317,21 +433,27 @@ const DonationsTab: React.FC = () => {
                                     <label>{__('Donation Status', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.donation_status}
-                                        onChange={(value: string) => handleFieldChange('donation_status', value)}
-                                        options={[
-                                            { label: __('Complete', 'give-data-generator'), value: 'complete' },
-                                            { label: __('Pending', 'give-data-generator'), value: 'pending' },
-                                            { label: __('Processing', 'give-data-generator'), value: 'processing' },
-                                            { label: __('Failed', 'give-data-generator'), value: 'failed' },
-                                            { label: __('Cancelled', 'give-data-generator'), value: 'cancelled' },
-                                            { label: __('Refunded', 'give-data-generator'), value: 'refunded' },
-                                            { label: __('Abandoned', 'give-data-generator'), value: 'abandoned' },
-                                            { label: __('Preapproval', 'give-data-generator'), value: 'preapproval' },
-                                            { label: __('Revoked', 'give-data-generator'), value: 'revoked' },
-                                            { label: __('Random Status', 'give-data-generator'), value: 'random' }
-                                        ]}
+                                    <Controller
+                                        name="donation_status"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={[
+                                                    { label: __('Complete', 'give-data-generator'), value: 'complete' },
+                                                    { label: __('Pending', 'give-data-generator'), value: 'pending' },
+                                                    { label: __('Processing', 'give-data-generator'), value: 'processing' },
+                                                    { label: __('Failed', 'give-data-generator'), value: 'failed' },
+                                                    { label: __('Cancelled', 'give-data-generator'), value: 'cancelled' },
+                                                    { label: __('Refunded', 'give-data-generator'), value: 'refunded' },
+                                                    { label: __('Abandoned', 'give-data-generator'), value: 'abandoned' },
+                                                    { label: __('Preapproval', 'give-data-generator'), value: 'preapproval' },
+                                                    { label: __('Revoked', 'give-data-generator'), value: 'revoked' },
+                                                    { label: __('Random Status', 'give-data-generator'), value: 'random' }
+                                                ]}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
                                         {__('Status for the generated donations. Select "Random" to use a mix of statuses.', 'give-data-generator')}
@@ -346,7 +468,7 @@ const DonationsTab: React.FC = () => {
                             type="submit"
                             variant="primary"
                             isBusy={isSubmitting}
-                            disabled={!formData.campaign_id || isSubmitting || (isCampaignsResolved && campaigns.length === 0)}
+                            disabled={isSubmitting || (isCampaignsResolved && campaigns.length === 0)}
                         >
                             {isSubmitting
                                 ? __('Generating...', 'give-data-generator')

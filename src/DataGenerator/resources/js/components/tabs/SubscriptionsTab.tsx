@@ -11,6 +11,7 @@ import {
     FlexItem
 } from '@wordpress/components';
 import { useEntityRecords } from '@wordpress/core-data';
+import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { ApiResponse, ResultState, Campaign } from '../../types';
 import dataGenerator from '../../common/getWindowData';
 
@@ -48,22 +49,36 @@ const SubscriptionsTab: React.FC = () => {
         }
     }, [campaignRecords, isCampaignsResolved]);
 
-    const [formData, setFormData] = useState<SubscriptionFormData>({
-        campaign_id: '',
-        subscription_count: 10,
-        date_range: 'last_30_days',
-        start_date: '',
-        end_date: '',
-        subscription_mode: 'test',
-        subscription_status: 'active',
-        subscription_period: 'month',
-        frequency: 1,
-        installments: 0,
-        renewals_count: 0
-    });
-
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [result, setResult] = useState<ResultState | null>(null);
+
+    // Initialize react-hook-form
+    const {
+        control,
+        handleSubmit,
+        watch,
+        formState: { errors },
+        setError,
+        clearErrors
+    } = useForm<SubscriptionFormData>({
+        defaultValues: {
+            campaign_id: '',
+            subscription_count: 10,
+            date_range: 'last_30_days',
+            start_date: '',
+            end_date: '',
+            subscription_mode: 'test',
+            subscription_status: 'active',
+            subscription_period: 'month',
+            frequency: 1,
+            installments: 0,
+            renewals_count: 0
+        },
+        mode: 'onSubmit'
+    });
+
+    // Watch specific fields for conditional rendering
+    const watchedDateRange = watch('date_range');
 
     // Prepare campaign options for SelectControl
     const campaignOptions: SelectOption[] = !isCampaignsResolved ? [
@@ -76,22 +91,32 @@ const SubscriptionsTab: React.FC = () => {
         }))
     ];
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
-        e.preventDefault();
+    const onSubmit: SubmitHandler<SubscriptionFormData> = async (formData): Promise<void> => {
+        // Clear any previous errors
+        clearErrors();
 
+        // Custom validation
         if (!formData.campaign_id) {
-            setResult({
-                success: false,
+            setError('campaign_id', {
+                type: 'required',
                 message: __('Please select a campaign', 'give-data-generator')
             });
             return;
         }
 
         if (formData.date_range === 'custom' && (!formData.start_date || !formData.end_date)) {
-            setResult({
-                success: false,
-                message: __('Please select both start and end dates for custom range', 'give-data-generator')
-            });
+            if (!formData.start_date) {
+                setError('start_date', {
+                    type: 'required',
+                    message: __('Please select a start date', 'give-data-generator')
+                });
+            }
+            if (!formData.end_date) {
+                setError('end_date', {
+                    type: 'required',
+                    message: __('Please select an end date', 'give-data-generator')
+                });
+            }
             return;
         }
 
@@ -130,14 +155,10 @@ const SubscriptionsTab: React.FC = () => {
         }
     };
 
-    const handleFieldChange = (field: keyof SubscriptionFormData, value: SubscriptionFormData[keyof SubscriptionFormData]): void => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
     return (
         <Card>
             <CardBody>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit(onSubmit)}>
                     <table className="form-table">
                         <tbody>
                             <tr>
@@ -145,11 +166,23 @@ const SubscriptionsTab: React.FC = () => {
                                     <label>{__('Campaign', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.campaign_id}
-                                        onChange={(value: string) => handleFieldChange('campaign_id', value)}
-                                        options={campaignOptions}
+                                    <Controller
+                                        name="campaign_id"
+                                        control={control}
+                                        rules={{ required: __('Please select a campaign', 'give-data-generator') }}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={campaignOptions}
+                                            />
+                                        )}
                                     />
+                                    {errors.campaign_id && (
+                                        <p className="description" style={{ color: '#d63638' }}>
+                                            {errors.campaign_id.message}
+                                        </p>
+                                    )}
                                     <p className="description">
                                         {__('Choose which campaign the test subscriptions should be associated with.', 'give-data-generator')}
                                     </p>
@@ -166,13 +199,29 @@ const SubscriptionsTab: React.FC = () => {
                                     <label>{__('Number of Subscriptions', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <TextControl
-                                        type="number"
-                                        value={formData.subscription_count}
-                                        onChange={(value: string) => handleFieldChange('subscription_count', parseInt(value) || 1)}
-                                        min={1}
-                                        max={1000}
+                                    <Controller
+                                        name="subscription_count"
+                                        control={control}
+                                        rules={{
+                                            required: __('Subscription count is required', 'give-data-generator'),
+                                            min: { value: 1, message: __('Minimum 1 subscription required', 'give-data-generator') },
+                                            max: { value: 1000, message: __('Maximum 1000 subscriptions allowed', 'give-data-generator') }
+                                        }}
+                                        render={({ field }) => (
+                                            <TextControl
+                                                type="number"
+                                                value={String(field.value)}
+                                                onChange={(value: string) => field.onChange(parseInt(value) || 1)}
+                                                min={1}
+                                                max={1000}
+                                            />
+                                        )}
                                     />
+                                    {errors.subscription_count && (
+                                        <p className="description" style={{ color: '#d63638' }}>
+                                            {errors.subscription_count.message}
+                                        </p>
+                                    )}
                                     <p className="description">
                                         {__('How many test subscriptions to generate (1-1000).', 'give-data-generator')}
                                     </p>
@@ -184,15 +233,21 @@ const SubscriptionsTab: React.FC = () => {
                                     <label>{__('Date Range', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.date_range}
-                                        onChange={(value: string) => handleFieldChange('date_range', value)}
-                                        options={[
-                                            { label: __('Last 30 Days', 'give-data-generator'), value: 'last_30_days' },
-                                            { label: __('Last 90 Days', 'give-data-generator'), value: 'last_90_days' },
-                                            { label: __('Last Year', 'give-data-generator'), value: 'last_year' },
-                                            { label: __('Custom Range', 'give-data-generator'), value: 'custom' }
-                                        ]}
+                                    <Controller
+                                        name="date_range"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={[
+                                                    { label: __('Last 30 Days', 'give-data-generator'), value: 'last_30_days' },
+                                                    { label: __('Last 90 Days', 'give-data-generator'), value: 'last_90_days' },
+                                                    { label: __('Last Year', 'give-data-generator'), value: 'last_year' },
+                                                    { label: __('Custom Range', 'give-data-generator'), value: 'custom' }
+                                                ]}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
                                         {__('Timeframe within which subscriptions should be created.', 'give-data-generator')}
@@ -200,7 +255,7 @@ const SubscriptionsTab: React.FC = () => {
                                 </td>
                             </tr>
 
-                            {formData.date_range === 'custom' && (
+                            {watchedDateRange === 'custom' && (
                                 <tr>
                                     <th scope="row">
                                         <label>{__('Custom Date Range', 'give-data-generator')}</label>
@@ -208,21 +263,53 @@ const SubscriptionsTab: React.FC = () => {
                                     <td>
                                         <Flex gap={2} align="center">
                                             <FlexItem>
-                                                <TextControl
-                                                    type="date"
-                                                    value={formData.start_date}
-                                                    onChange={(value: string) => handleFieldChange('start_date', value)}
+                                                <Controller
+                                                    name="start_date"
+                                                    control={control}
+                                                    rules={{
+                                                        required: watchedDateRange === 'custom'
+                                                            ? __('Please select a start date', 'give-data-generator')
+                                                            : false
+                                                    }}
+                                                    render={({ field }) => (
+                                                        <TextControl
+                                                            type="date"
+                                                            value={field.value}
+                                                            onChange={field.onChange}
+                                                        />
+                                                    )}
                                                 />
+                                                {errors.start_date && (
+                                                    <p className="description" style={{ color: '#d63638', fontSize: '12px' }}>
+                                                        {errors.start_date.message}
+                                                    </p>
+                                                )}
                                             </FlexItem>
                                             <FlexItem>
                                                 {__('to', 'give-data-generator')}
                                             </FlexItem>
                                             <FlexItem>
-                                                <TextControl
-                                                    type="date"
-                                                    value={formData.end_date}
-                                                    onChange={(value: string) => handleFieldChange('end_date', value)}
+                                                <Controller
+                                                    name="end_date"
+                                                    control={control}
+                                                    rules={{
+                                                        required: watchedDateRange === 'custom'
+                                                            ? __('Please select an end date', 'give-data-generator')
+                                                            : false
+                                                    }}
+                                                    render={({ field }) => (
+                                                        <TextControl
+                                                            type="date"
+                                                            value={field.value}
+                                                            onChange={field.onChange}
+                                                        />
+                                                    )}
                                                 />
+                                                {errors.end_date && (
+                                                    <p className="description" style={{ color: '#d63638', fontSize: '12px' }}>
+                                                        {errors.end_date.message}
+                                                    </p>
+                                                )}
                                             </FlexItem>
                                         </Flex>
                                         <p className="description">
@@ -237,13 +324,19 @@ const SubscriptionsTab: React.FC = () => {
                                     <label>{__('Subscription Mode', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.subscription_mode}
-                                        onChange={(value: string) => handleFieldChange('subscription_mode', value)}
-                                        options={[
-                                            { label: __('Test Mode', 'give-data-generator'), value: 'test' },
-                                            { label: __('Live Mode', 'give-data-generator'), value: 'live' }
-                                        ]}
+                                    <Controller
+                                        name="subscription_mode"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={[
+                                                    { label: __('Test Mode', 'give-data-generator'), value: 'test' },
+                                                    { label: __('Live Mode', 'give-data-generator'), value: 'live' }
+                                                ]}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
                                         {__('Choose whether subscriptions should be created in test or live mode.', 'give-data-generator')}
@@ -256,22 +349,28 @@ const SubscriptionsTab: React.FC = () => {
                                     <label>{__('Subscription Status', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.subscription_status}
-                                        onChange={(value: string) => handleFieldChange('subscription_status', value)}
-                                        options={[
-                                            { label: __('Active', 'give-data-generator'), value: 'active' },
-                                            { label: __('Completed', 'give-data-generator'), value: 'completed' },
-                                            { label: __('Paused', 'give-data-generator'), value: 'paused' },
-                                            { label: __('Suspended', 'give-data-generator'), value: 'suspended' },
-                                            { label: __('Pending', 'give-data-generator'), value: 'pending' },
-                                            { label: __('Expired', 'give-data-generator'), value: 'expired' },
-                                            { label: __('Refunded', 'give-data-generator'), value: 'refunded' },
-                                            { label: __('Cancelled', 'give-data-generator'), value: 'cancelled' },
-                                            { label: __('Abandoned', 'give-data-generator'), value: 'abandoned' },
-                                            { label: __('Failing', 'give-data-generator'), value: 'failing' },
-                                            { label: __('Random Status', 'give-data-generator'), value: 'random' }
-                                        ]}
+                                    <Controller
+                                        name="subscription_status"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={[
+                                                    { label: __('Active', 'give-data-generator'), value: 'active' },
+                                                    { label: __('Completed', 'give-data-generator'), value: 'completed' },
+                                                    { label: __('Paused', 'give-data-generator'), value: 'paused' },
+                                                    { label: __('Suspended', 'give-data-generator'), value: 'suspended' },
+                                                    { label: __('Pending', 'give-data-generator'), value: 'pending' },
+                                                    { label: __('Expired', 'give-data-generator'), value: 'expired' },
+                                                    { label: __('Refunded', 'give-data-generator'), value: 'refunded' },
+                                                    { label: __('Cancelled', 'give-data-generator'), value: 'cancelled' },
+                                                    { label: __('Abandoned', 'give-data-generator'), value: 'abandoned' },
+                                                    { label: __('Failing', 'give-data-generator'), value: 'failing' },
+                                                    { label: __('Random Status', 'give-data-generator'), value: 'random' }
+                                                ]}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
                                         {__('Status for the generated subscriptions. Select "Random" to use a mix of statuses.', 'give-data-generator')}
@@ -284,16 +383,22 @@ const SubscriptionsTab: React.FC = () => {
                                     <label>{__('Billing Period', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.subscription_period}
-                                        onChange={(value: string) => handleFieldChange('subscription_period', value)}
-                                        options={[
-                                            { label: __('Daily', 'give-data-generator'), value: 'day' },
-                                            { label: __('Weekly', 'give-data-generator'), value: 'week' },
-                                            { label: __('Monthly', 'give-data-generator'), value: 'month' },
-                                            { label: __('Quarterly', 'give-data-generator'), value: 'quarter' },
-                                            { label: __('Yearly', 'give-data-generator'), value: 'year' }
-                                        ]}
+                                    <Controller
+                                        name="subscription_period"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={[
+                                                    { label: __('Daily', 'give-data-generator'), value: 'day' },
+                                                    { label: __('Weekly', 'give-data-generator'), value: 'week' },
+                                                    { label: __('Monthly', 'give-data-generator'), value: 'month' },
+                                                    { label: __('Quarterly', 'give-data-generator'), value: 'quarter' },
+                                                    { label: __('Yearly', 'give-data-generator'), value: 'year' }
+                                                ]}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
                                         {__('The billing period for subscriptions.', 'give-data-generator')}
@@ -306,13 +411,29 @@ const SubscriptionsTab: React.FC = () => {
                                     <label>{__('Frequency', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <TextControl
-                                        type="number"
-                                        value={formData.frequency}
-                                        onChange={(value: string) => handleFieldChange('frequency', parseInt(value) || 1)}
-                                        min={1}
-                                        max={12}
+                                    <Controller
+                                        name="frequency"
+                                        control={control}
+                                        rules={{
+                                            required: __('Frequency is required', 'give-data-generator'),
+                                            min: { value: 1, message: __('Frequency must be at least 1', 'give-data-generator') },
+                                            max: { value: 12, message: __('Frequency cannot exceed 12', 'give-data-generator') }
+                                        }}
+                                        render={({ field }) => (
+                                            <TextControl
+                                                type="number"
+                                                value={String(field.value)}
+                                                onChange={(value: string) => field.onChange(parseInt(value) || 1)}
+                                                min={1}
+                                                max={12}
+                                            />
+                                        )}
                                     />
+                                    {errors.frequency && (
+                                        <p className="description" style={{ color: '#d63638' }}>
+                                            {errors.frequency.message}
+                                        </p>
+                                    )}
                                     <p className="description">
                                         {__('How often the subscription should bill within the period (e.g., every 2 months = frequency 2 with monthly period).', 'give-data-generator')}
                                     </p>
@@ -324,13 +445,28 @@ const SubscriptionsTab: React.FC = () => {
                                     <label>{__('Installments', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <TextControl
-                                        type="number"
-                                        value={formData.installments}
-                                        onChange={(value: string) => handleFieldChange('installments', parseInt(value) || 0)}
-                                        min={0}
-                                        max={100}
+                                    <Controller
+                                        name="installments"
+                                        control={control}
+                                        rules={{
+                                            min: { value: 0, message: __('Installments cannot be negative', 'give-data-generator') },
+                                            max: { value: 100, message: __('Installments cannot exceed 100', 'give-data-generator') }
+                                        }}
+                                        render={({ field }) => (
+                                            <TextControl
+                                                type="number"
+                                                value={String(field.value)}
+                                                onChange={(value: string) => field.onChange(parseInt(value) || 0)}
+                                                min={0}
+                                                max={100}
+                                            />
+                                        )}
                                     />
+                                    {errors.installments && (
+                                        <p className="description" style={{ color: '#d63638' }}>
+                                            {errors.installments.message}
+                                        </p>
+                                    )}
                                     <p className="description">
                                         {__('Total number of payments before subscription ends. Set to 0 for unlimited/indefinite subscriptions.', 'give-data-generator')}
                                     </p>
@@ -342,13 +478,28 @@ const SubscriptionsTab: React.FC = () => {
                                     <label>{__('Renewals per Subscription', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <TextControl
-                                        type="number"
-                                        value={formData.renewals_count}
-                                        onChange={(value: string) => handleFieldChange('renewals_count', parseInt(value) || 0)}
-                                        min={0}
-                                        max={50}
+                                    <Controller
+                                        name="renewals_count"
+                                        control={control}
+                                        rules={{
+                                            min: { value: 0, message: __('Renewals count cannot be negative', 'give-data-generator') },
+                                            max: { value: 50, message: __('Renewals count cannot exceed 50', 'give-data-generator') }
+                                        }}
+                                        render={({ field }) => (
+                                            <TextControl
+                                                type="number"
+                                                value={String(field.value)}
+                                                onChange={(value: string) => field.onChange(parseInt(value) || 0)}
+                                                min={0}
+                                                max={50}
+                                            />
+                                        )}
                                     />
+                                    {errors.renewals_count && (
+                                        <p className="description" style={{ color: '#d63638' }}>
+                                            {errors.renewals_count.message}
+                                        </p>
+                                    )}
                                     <p className="description">
                                         {__('Number of renewal payments to generate for each subscription (0-50). This creates historical renewal data.', 'give-data-generator')}
                                     </p>
@@ -362,7 +513,7 @@ const SubscriptionsTab: React.FC = () => {
                             type="submit"
                             variant="primary"
                             isBusy={isSubmitting}
-                            disabled={!formData.campaign_id || isSubmitting || campaigns.length === 0}
+                            disabled={isSubmitting || (isCampaignsResolved && campaigns.length === 0)}
                         >
                             {isSubmitting
                                 ? __('Generating...', 'give-data-generator')

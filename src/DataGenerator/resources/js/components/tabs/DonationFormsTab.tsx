@@ -12,6 +12,7 @@ import {
     FlexItem
 } from '@wordpress/components';
 import { useEntityRecords } from '@wordpress/core-data';
+import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { ApiResponse, ResultState, Campaign } from '../../types';
 import dataGenerator from '../../common/getWindowData';
 
@@ -48,21 +49,35 @@ const DonationFormsTab: React.FC = () => {
         }
     }, [campaignRecords, isCampaignsResolved]);
 
-    const [formData, setFormData] = useState<DonationFormFormData>({
-        campaign_id: '',
-        form_count: 3,
-        form_status: 'published',
-        enable_goals: false,
-        goal_type: 'campaign',
-        goal_amount_min: 500,
-        goal_amount_max: 5000,
-        random_designs: true,
-        inherit_campaign_colors: true,
-        form_title_prefix: ''
-    });
-
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [result, setResult] = useState<ResultState | null>(null);
+
+    // Initialize react-hook-form
+    const {
+        control,
+        handleSubmit,
+        watch,
+        formState: { errors },
+        setError,
+        clearErrors
+    } = useForm<DonationFormFormData>({
+        defaultValues: {
+            campaign_id: '',
+            form_count: 3,
+            form_status: 'published',
+            enable_goals: false,
+            goal_type: 'campaign',
+            goal_amount_min: 500,
+            goal_amount_max: 5000,
+            random_designs: true,
+            inherit_campaign_colors: true,
+            form_title_prefix: ''
+        },
+        mode: 'onSubmit'
+    });
+
+    // Watch specific fields for conditional rendering
+    const watchedEnableGoals = watch('enable_goals');
 
     // Prepare campaign options for SelectControl
     const campaignOptions: SelectOption[] = !isCampaignsResolved ? [
@@ -75,12 +90,14 @@ const DonationFormsTab: React.FC = () => {
         }))
     ];
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
-        e.preventDefault();
+    const onSubmit: SubmitHandler<DonationFormFormData> = async (formData): Promise<void> => {
+        // Clear any previous errors
+        clearErrors();
 
+        // Custom validation
         if (!formData.campaign_id) {
-            setResult({
-                success: false,
+            setError('campaign_id', {
+                type: 'required',
                 message: __('Please select a campaign', 'give-data-generator')
             });
             return;
@@ -121,14 +138,10 @@ const DonationFormsTab: React.FC = () => {
         }
     };
 
-    const handleFieldChange = (field: keyof DonationFormFormData, value: DonationFormFormData[keyof DonationFormFormData]): void => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
     return (
         <Card>
             <CardBody>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit(onSubmit)}>
                     <table className="form-table">
                         <tbody>
                             <tr>
@@ -136,11 +149,23 @@ const DonationFormsTab: React.FC = () => {
                                     <label>{__('Campaign', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.campaign_id}
-                                        onChange={(value: string) => handleFieldChange('campaign_id', value)}
-                                        options={campaignOptions}
+                                    <Controller
+                                        name="campaign_id"
+                                        control={control}
+                                        rules={{ required: __('Please select a campaign', 'give-data-generator') }}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={campaignOptions}
+                                            />
+                                        )}
                                     />
+                                    {errors.campaign_id && (
+                                        <p className="description" style={{ color: '#d63638' }}>
+                                            {errors.campaign_id.message}
+                                        </p>
+                                    )}
                                     <p className="description">
                                         {__('Choose which campaign the donation forms should be associated with.', 'give-data-generator')}
                                     </p>
@@ -157,13 +182,29 @@ const DonationFormsTab: React.FC = () => {
                                     <label>{__('Number of Forms', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <TextControl
-                                        type="number"
-                                        value={formData.form_count}
-                                        onChange={(value: string) => handleFieldChange('form_count', parseInt(value) || 1)}
-                                        min={1}
-                                        max={20}
+                                    <Controller
+                                        name="form_count"
+                                        control={control}
+                                        rules={{
+                                            required: __('Form count is required', 'give-data-generator'),
+                                            min: { value: 1, message: __('Minimum 1 form required', 'give-data-generator') },
+                                            max: { value: 20, message: __('Maximum 20 forms allowed', 'give-data-generator') }
+                                        }}
+                                        render={({ field }) => (
+                                            <TextControl
+                                                type="number"
+                                                value={String(field.value)}
+                                                onChange={(value: string) => field.onChange(parseInt(value) || 1)}
+                                                min={1}
+                                                max={20}
+                                            />
+                                        )}
                                     />
+                                    {errors.form_count && (
+                                        <p className="description" style={{ color: '#d63638' }}>
+                                            {errors.form_count.message}
+                                        </p>
+                                    )}
                                     <p className="description">
                                         {__('How many donation forms to generate for the selected campaign (1-20).', 'give-data-generator')}
                                     </p>
@@ -175,14 +216,20 @@ const DonationFormsTab: React.FC = () => {
                                     <label>{__('Form Status', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <SelectControl
-                                        value={formData.form_status}
-                                        onChange={(value: string) => handleFieldChange('form_status', value)}
-                                        options={[
-                                            { label: __('Published', 'give-data-generator'), value: 'published' },
-                                            { label: __('Draft', 'give-data-generator'), value: 'draft' },
-                                            { label: __('Private', 'give-data-generator'), value: 'private' }
-                                        ]}
+                                    <Controller
+                                        name="form_status"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <SelectControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                options={[
+                                                    { label: __('Published', 'give-data-generator'), value: 'published' },
+                                                    { label: __('Draft', 'give-data-generator'), value: 'draft' },
+                                                    { label: __('Private', 'give-data-generator'), value: 'private' }
+                                                ]}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
                                         {__('Status for the generated donation forms.', 'give-data-generator')}
@@ -195,113 +242,162 @@ const DonationFormsTab: React.FC = () => {
                                     <label>{__('Enable Goals', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <CheckboxControl
-                                        checked={formData.enable_goals}
-                                        onChange={(value: boolean) => handleFieldChange('enable_goals', value)}
-                                        label={__('Enable donation goals for generated forms', 'give-data-generator')}
+                                    <Controller
+                                        name="enable_goals"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <CheckboxControl
+                                                checked={field.value}
+                                                onChange={field.onChange}
+                                                label={__('Enable donation goals for generated forms', 'give-data-generator')}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
-                                        {__('Whether to enable donation goals on the generated forms.', 'give-data-generator')}
+                                        {__('When enabled, each donation form will have a randomly generated goal within the specified range.', 'give-data-generator')}
                                     </p>
                                 </td>
                             </tr>
 
-                            {formData.enable_goals && (
+                            {watchedEnableGoals && (
                                 <>
                                     <tr>
                                         <th scope="row">
                                             <label>{__('Goal Type', 'give-data-generator')}</label>
                                         </th>
                                         <td>
-                                            <SelectControl
-                                                value={formData.goal_type}
-                                                onChange={(value: string) => handleFieldChange('goal_type', value)}
-                                                options={[
-                                                    { label: __('Inherit from Campaign', 'give-data-generator'), value: 'campaign' },
-                                                    { label: __('Amount', 'give-data-generator'), value: 'amount' },
-                                                    { label: __('Number of Donations', 'give-data-generator'), value: 'donations' },
-                                                    { label: __('Number of Donors', 'give-data-generator'), value: 'donors' }
-                                                ]}
+                                            <Controller
+                                                name="goal_type"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <SelectControl
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                        options={[
+                                                            { label: __('Amount', 'give-data-generator'), value: 'amount' },
+                                                            { label: __('Campaign Amount', 'give-data-generator'), value: 'campaign' },
+                                                            { label: __('Number of Donations', 'give-data-generator'), value: 'donations' },
+                                                            { label: __('Number of Donors', 'give-data-generator'), value: 'donors' }
+                                                        ]}
+                                                    />
+                                                )}
                                             />
                                             <p className="description">
-                                                {__('Type of goal for the forms. Campaign option inherits goal settings from the selected campaign.', 'give-data-generator')}
+                                                {__('Type of goal for the donation forms.', 'give-data-generator')}
                                             </p>
                                         </td>
                                     </tr>
 
-                                    {formData.goal_type !== 'campaign' && (
-                                        <tr>
-                                            <th scope="row">
-                                                <label>{__('Goal Amount Range', 'give-data-generator')}</label>
-                                            </th>
-                                            <td>
-                                                <Flex gap={2} align="center">
-                                                    <FlexItem>
-                                                        <TextControl
-                                                            type="number"
-                                                            value={formData.goal_amount_min}
-                                                            onChange={(value: string) => handleFieldChange('goal_amount_min', parseInt(value) || 0)}
-                                                            min={100}
-                                                        />
-                                                    </FlexItem>
-                                                    <FlexItem>
-                                                        {__('to', 'give-data-generator')}
-                                                    </FlexItem>
-                                                    <FlexItem>
-                                                        <TextControl
-                                                            type="number"
-                                                            value={formData.goal_amount_max}
-                                                            onChange={(value: string) => handleFieldChange('goal_amount_max', parseInt(value) || 0)}
-                                                            min={100}
-                                                        />
-                                                    </FlexItem>
-                                                </Flex>
-                                                <p className="description">
-                                                    {__('Random goal amounts will be generated within this range (only for custom goals).', 'give-data-generator')}
+                                    <tr>
+                                        <th scope="row">
+                                            <label>{__('Goal Amount Range', 'give-data-generator')}</label>
+                                        </th>
+                                        <td>
+                                            <Flex gap={2} align="center" justify="flex-start">
+                                                <FlexItem>
+                                                    <Controller
+                                                        name="goal_amount_min"
+                                                        control={control}
+                                                        rules={{
+                                                            required: watchedEnableGoals ? __('Minimum goal amount is required', 'give-data-generator') : false,
+                                                            min: { value: 100, message: __('Minimum goal amount must be at least $100', 'give-data-generator') }
+                                                        }}
+                                                        render={({ field }) => (
+                                                            <TextControl
+                                                                type="number"
+                                                                value={String(field.value)}
+                                                                onChange={(value: string) => field.onChange(parseInt(value) || 100)}
+                                                                min={100}
+                                                            />
+                                                        )}
+                                                    />
+                                                </FlexItem>
+                                                <FlexItem>
+                                                    {__('to', 'give-data-generator')}
+                                                </FlexItem>
+                                                <FlexItem>
+                                                    <Controller
+                                                        name="goal_amount_max"
+                                                        control={control}
+                                                        rules={{
+                                                            required: watchedEnableGoals ? __('Maximum goal amount is required', 'give-data-generator') : false,
+                                                            min: { value: 100, message: __('Maximum goal amount must be at least $100', 'give-data-generator') }
+                                                        }}
+                                                        render={({ field }) => (
+                                                            <TextControl
+                                                                type="number"
+                                                                value={String(field.value)}
+                                                                onChange={(value: string) => field.onChange(parseInt(value) || 100)}
+                                                                min={100}
+                                                            />
+                                                        )}
+                                                    />
+                                                </FlexItem>
+                                            </Flex>
+                                            {(errors.goal_amount_min || errors.goal_amount_max) && (
+                                                <p className="description" style={{ color: '#d63638' }}>
+                                                    {errors.goal_amount_min?.message || errors.goal_amount_max?.message}
                                                 </p>
-                                            </td>
-                                        </tr>
-                                    )}
+                                            )}
+                                            <p className="description">
+                                                {__('Random goal amounts will be generated within this range (minimum $100).', 'give-data-generator')}
+                                            </p>
+                                        </td>
+                                    </tr>
                                 </>
                             )}
 
                             <tr>
                                 <th scope="row">
-                                    <label>{__('Form Options', 'give-data-generator')}</label>
+                                    <label>{__('Design Options', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <CheckboxControl
-                                        checked={formData.random_designs}
-                                        onChange={(value: boolean) => handleFieldChange('random_designs', value)}
-                                        label={__('Use random form designs', 'give-data-generator')}
+                                    <Controller
+                                        name="random_designs"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <CheckboxControl
+                                                checked={field.value}
+                                                onChange={field.onChange}
+                                                label={__('Use random form designs', 'give-data-generator')}
+                                            />
+                                        )}
                                     />
-                                    <p className="description" style={{ marginTop: '5px', marginBottom: '10px' }}>
-                                        {__('Randomly assign form designs (Multi-step, Classic, Two Panel) to generated forms.', 'give-data-generator')}
-                                    </p>
-
-                                    <CheckboxControl
-                                        checked={formData.inherit_campaign_colors}
-                                        onChange={(value: boolean) => handleFieldChange('inherit_campaign_colors', value)}
-                                        label={__('Inherit colors from campaign', 'give-data-generator')}
+                                    <Controller
+                                        name="inherit_campaign_colors"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <CheckboxControl
+                                                checked={field.value}
+                                                onChange={field.onChange}
+                                                label={__('Inherit colors from campaign', 'give-data-generator')}
+                                            />
+                                        )}
                                     />
-                                    <p className="description" style={{ marginTop: '5px' }}>
-                                        {__('Use the primary and secondary colors from the selected campaign for the forms.', 'give-data-generator')}
+                                    <p className="description">
+                                        {__('Customize the visual appearance of generated donation forms.', 'give-data-generator')}
                                     </p>
                                 </td>
                             </tr>
 
                             <tr>
                                 <th scope="row">
-                                    <label>{__('Title Prefix', 'give-data-generator')}</label>
+                                    <label>{__('Form Title Prefix', 'give-data-generator')}</label>
                                 </th>
                                 <td>
-                                    <TextControl
-                                        value={formData.form_title_prefix}
-                                        onChange={(value: string) => handleFieldChange('form_title_prefix', value)}
-                                        placeholder={__('e.g., Test Form', 'give-data-generator')}
+                                    <Controller
+                                        name="form_title_prefix"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <TextControl
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder={__('Enter prefix for form titles (optional)', 'give-data-generator')}
+                                            />
+                                        )}
                                     />
                                     <p className="description">
-                                        {__('Optional prefix for generated form titles. Leave blank to use default naming pattern.', 'give-data-generator')}
+                                        {__('Optional prefix to add to generated form titles. Leave blank for default naming.', 'give-data-generator')}
                                     </p>
                                 </td>
                             </tr>
@@ -313,11 +409,11 @@ const DonationFormsTab: React.FC = () => {
                             type="submit"
                             variant="primary"
                             isBusy={isSubmitting}
-                            disabled={!formData.campaign_id || isSubmitting || campaigns.length === 0}
+                            disabled={isSubmitting || (isCampaignsResolved && campaigns.length === 0)}
                         >
                             {isSubmitting
                                 ? __('Generating...', 'give-data-generator')
-                                : campaigns.length === 0
+                                : (isCampaignsResolved && campaigns.length === 0)
                                     ? __('No Campaigns Available', 'give-data-generator')
                                     : __('Generate Donation Forms', 'give-data-generator')
                             }
