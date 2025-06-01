@@ -1,11 +1,11 @@
 <?php
 
-namespace GiveFaker\Addon;
+namespace GiveDataGenerator\Addon;
 
 /**
  * Helper class responsible for showing add-on notices.
  *
- * @package     GiveFaker\Addon\Helpers
+ * @package     GiveDataGenerator\Addon\Helpers
  * @copyright   Copyright (c) 2020, GiveWP
  */
 class Notices

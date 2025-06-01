@@ -1,6 +1,6 @@
 <?php
 
-namespace GiveFaker\Addon;
+namespace GiveDataGenerator\Addon;
 
 class Links
 {

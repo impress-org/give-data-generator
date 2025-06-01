@@ -1,6 +1,6 @@
 <?php
 
-namespace GiveFaker\Addon;
+namespace GiveDataGenerator\Addon;
 
 use Give_License;
 
@@ -16,9 +16,9 @@ class License
     public function check()
     {
         new Give_License(
-            GIVE_FAKER_FILE,
-            GIVE_FAKER_NAME,
-            GIVE_FAKER_VERSION,
+            GIVE_DATA_GENERATOR_FILE,
+            GIVE_DATA_GENERATOR_NAME,
+            GIVE_DATA_GENERATOR_VERSION,
             'GiveWP'
         );
     }

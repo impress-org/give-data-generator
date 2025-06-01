@@ -1,6 +1,6 @@
 <?php
 
-namespace GiveFaker\TestDonationGenerator;
+namespace GiveDataGenerator\DataGenerator;
 
 use DateTime;
 use Exception;
@@ -16,7 +16,7 @@ use Give\Framework\Support\ValueObjects\Money;
 /**
  * Data Generator.
  *
- * @package     GiveFaker\TestDonationGenerator
+ * @package     GiveDataGenerator\DataGenerator
  * @since       1.0.0
  */
 class DonationGenerator

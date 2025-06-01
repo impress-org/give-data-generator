@@ -1,11 +1,11 @@
 <?php
 
-namespace GiveFaker\Addon;
+namespace GiveDataGenerator\Addon;
 
 /**
  * Helper class responsible for loading add-on translations.
  *
- * @package     GiveFaker\Addon\Helpers
+ * @package     GiveDataGenerator\Addon\Helpers
  * @copyright   Copyright (c) 2020, GiveWP
  */
 class Language
@@ -22,7 +22,7 @@ class Language
         $langDir = apply_filters(
             sprintf('%s_languages_directory', 'give-data-generator'),
             // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores, WordPress.NamingConventions.ValidHookName.NotLowercase
-            dirname(GIVE_FAKER_BASENAME) . '/languages/'
+            dirname(GIVE_DATA_GENERATOR_BASENAME) . '/languages/'
         );
 
         // Traditional WordPress plugin locale filter.

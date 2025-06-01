@@ -1,6 +1,6 @@
 <?php
 
-namespace GiveFaker\Tests\Unit\GiveFaker;
+namespace GiveDataGenerator\Tests\Unit\GiveDataGenerator;
 
 use Give\Campaigns\Models\Campaign;
 use Give\Campaigns\ValueObjects\CampaignGoalType;
@@ -10,9 +10,9 @@ use Give\Donations\Models\Donation;
 use Give\Donors\Models\Donor;
 use Give\Tests\TestCase;
 use Give\Tests\TestTraits\RefreshDatabase;
-use GiveFaker\TestDonationGenerator\AdminSettings;
-use GiveFaker\TestDonationGenerator\DonationGenerator;
-use GiveFaker\TestDonationGenerator\ServiceProvider;
+use GiveDataGenerator\DataGenerator\AdminSettings;
+use GiveDataGenerator\DataGenerator\DonationGenerator;
+use GiveDataGenerator\DataGenerator\ServiceProvider;
 
 class TestIntegration extends TestCase
 {

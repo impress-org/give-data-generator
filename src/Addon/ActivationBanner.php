@@ -1,13 +1,13 @@
 <?php
 
-namespace GiveFaker\Addon;
+namespace GiveDataGenerator\Addon;
 
 use Give_Addon_Activation_Banner;
 
 /**
  * Helper class responsible for showing add-on Activation Banner.
  *
- * @package     GiveFaker\Addon\Helpers
+ * @package     GiveDataGenerator\Addon\Helpers
  * @copyright   Copyright (c) 2020, GiveWP
  */
 class ActivationBanner
@@ -28,9 +28,9 @@ class ActivationBanner
 
         // Only runs on admin.
         $args = [
-            'file' => GIVE_FAKER_FILE,
-            'name' => GIVE_FAKER_NAME,
-            'version' => GIVE_FAKER_VERSION,
+            'file' => GIVE_DATA_GENERATOR_FILE,
+            'name' => GIVE_DATA_GENERATOR_NAME,
+            'version' => GIVE_DATA_GENERATOR_VERSION,
             'settings_url' => admin_url('edit.php?post_type=give_forms&page=give-settings&tab=give-data-generator'),
             'documentation_url' => 'https://givewp.com/documentation/add-ons/boilerplate/',
             'support_url' => 'https://givewp.com/support/',

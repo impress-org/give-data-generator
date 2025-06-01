@@ -1,16 +1,17 @@
 <?php
 
-namespace GiveFaker\TestDonationGenerator;
+namespace GiveDataGenerator\DataGenerator;
 
 use Give\Helpers\Hooks;
 use Give\ServiceProviders\ServiceProvider as ServiceProviderInterface;
-use GiveFaker\TestDonationGenerator\AdminSettings;
-use GiveFaker\TestDonationGenerator\DonationGenerator;
+use GiveDataGenerator\DataGenerator\AdminSettings;
+use GiveDataGenerator\DataGenerator\DonationGenerator;
+use GiveDataGenerator\DataGenerator\CampaignGenerator;
 
 /**
  * Service provider for the Data Generator domain.
  *
- * @package     GiveFaker\TestDonationGenerator
+ * @package     GiveDataGenerator\DataGenerator
  * @since       1.0.0
  */
 class ServiceProvider implements ServiceProviderInterface
@@ -21,6 +22,7 @@ class ServiceProvider implements ServiceProviderInterface
     public function register()
     {
         give()->singleton(DonationGenerator::class);
+        give()->singleton(CampaignGenerator::class);
         give()->singleton(AdminSettings::class);
     }
 
@@ -34,6 +36,7 @@ class ServiceProvider implements ServiceProviderInterface
 
         // Handle AJAX requests
         Hooks::addAction('wp_ajax_generate_test_donations', DonationGenerator::class, 'handleAjaxRequest');
+        Hooks::addAction('wp_ajax_generate_test_campaigns', CampaignGenerator::class, 'handleAjaxRequest');
 
         // Enqueue admin scripts
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
@@ -56,9 +59,9 @@ class ServiceProvider implements ServiceProviderInterface
         // Enqueue our admin script
         wp_enqueue_script(
             'data-generator-admin',
-            GIVE_FAKER_URL . 'build/admin.js',
+            GIVE_DATA_GENERATOR_URL . 'build/admin.js',
             ['jquery'],
-            GIVE_FAKER_VERSION,
+            GIVE_DATA_GENERATOR_VERSION,
             true
         );
 
@@ -66,6 +69,7 @@ class ServiceProvider implements ServiceProviderInterface
         wp_localize_script('data-generator-admin', 'dataGenerator', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('data_generator_nonce'),
+            'campaignNonce' => wp_create_nonce('campaign_generator_nonce'),
             'strings' => [
                 'errorMessage' => __('An error occurred while generating data.', 'give-data-generator'),
                 'processing' => __('Processing...', 'give-data-generator'),

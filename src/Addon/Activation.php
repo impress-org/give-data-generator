@@ -1,11 +1,11 @@
 <?php
 
-namespace GiveFaker\Addon;
+namespace GiveDataGenerator\Addon;
 
 /**
  * Example of a helper class responsible for registering and handling add-on activation hooks.
  *
- * @package     GiveFaker\Addon
+ * @package     GiveDataGenerator\Addon
  * @copyright   Copyright (c) 2020, GiveWP
  */
 class Activation

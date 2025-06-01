@@ -13,27 +13,21 @@
         "yoast/phpunit-polyfills": "^4.0"
     },
     "scripts": {
-        "test": "./vendor/bin/phpunit --configuration phpunit.xml --colors",
-        "test:verbose": "./vendor/bin/phpunit --configuration phpunit.xml --colors --verbose",
-        "test:coverage": "./vendor/bin/phpunit --configuration phpunit.xml --colors --coverage-text",
-        "test:filter": "./vendor/bin/phpunit --configuration phpunit.xml --colors --filter",
-        "lint:php": "./vendor/bin/phpcs -v -s --colors",
-        "lint:php:fix": "./vendor/bin/phpcbf -v --colors",
-        "post-install-cmd": [
-            "@install-codestandards"
-        ],
-        "install-codestandards": [
-            "Dealerdirect\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
-        ]
+        "test": "./vendor/bin/phpunit --configuration phpunit.xml --testsuite unit",
+        "test:unit": "./vendor/bin/phpunit --configuration phpunit.xml --testsuite unit",
+        "cs": "./vendor/bin/phpcs",
+        "cbf": "./vendor/bin/phpcbf"
     },
     "autoload": {
         "psr-4": {
-            "GiveFaker\\": "src/"
+            "GiveDataGenerator\\": "src/",
+            "GiveDataGenerator\\Addon\\": "src/Addon/",
+            "GiveDataGenerator\\DataGenerator\\": "src/DataGenerator/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "GiveFaker\\Tests\\": "tests/"
+            "GiveDataGenerator\\Tests\\": "tests/"
         }
     },
     "config": {

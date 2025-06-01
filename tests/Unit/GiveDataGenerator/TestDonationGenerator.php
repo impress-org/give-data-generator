@@ -1,6 +1,6 @@
 <?php
 
-namespace GiveFaker\Tests\Unit\GiveFaker;
+namespace GiveDataGenerator\Tests\Unit\GiveDataGenerator;
 
 use DateTime;
 use Exception;
@@ -13,7 +13,7 @@ use Give\Donations\ValueObjects\DonationStatus;
 use Give\Donors\Models\Donor;
 use Give\Tests\TestCase;
 use Give\Tests\TestTraits\RefreshDatabase;
-use GiveFaker\TestDonationGenerator\DonationGenerator;
+use GiveDataGenerator\DataGenerator\DonationGenerator;
 
 class TestDonationGenerator extends TestCase
 {

@@ -1,13 +1,13 @@
 <?php
 
-namespace GiveFaker\Addon;
+namespace GiveDataGenerator\Addon;
 
 use InvalidArgumentException;
 
 /**
  * Helper class responsible for loading add-on views.
  *
- * @package     GiveFaker\Addon\Helpers
+ * @package     GiveDataGenerator\Addon\Helpers
  * @copyright   Copyright (c) 2020, GiveWP
  */
 class View
@@ -15,7 +15,7 @@ class View
     /**
      * Default add-on domain
      */
-    const DEFAULT_DOMAIN = 'GiveFaker';
+    const DEFAULT_DOMAIN = 'GiveDataGenerator';
 
     /**
      * @since 1.0.0
@@ -26,8 +26,8 @@ class View
      * @param string $view Template name
      * When using multiple domains within this add-on, the domain directory can be set by using "." in the template name.
      * String before the "." character is domain directory, and everything after is the template file path
-     * Example usage: View::render( 'GiveFakerName.templateName' );
-     * This will try to load src/GiveFakerName/resources/view/templateName.php file
+     * Example usage: View::render( 'GiveDataGeneratorName.templateName' );
+     * This will try to load src/GiveDataGeneratorName/resources/view/templateName.php file
      *
      * @return string|void
      * @throws InvalidArgumentException if template file not exist
@@ -37,7 +37,7 @@ class View
     {
         // Get domain and file path
         list ($domain, $file) = static::getPaths($view);
-        $template = GIVE_FAKER_DIR . "src/{$domain}/resources/views/{$file}.php";
+        $template = GIVE_DATA_GENERATOR_DIR . "src/{$domain}/resources/views/{$file}.php";
 
         if ( ! file_exists($template)) {
             throw new InvalidArgumentException("View template file {$template} does not exist");

@@ -1,10 +1,10 @@
 <?php
 
-namespace GiveFaker\Tests\Unit\GiveFaker;
+namespace GiveDataGenerator\Tests\Unit\GiveDataGenerator;
 
 use Give\Tests\TestCase;
 use Give\Tests\TestTraits\RefreshDatabase;
-use GiveFaker\TestDonationGenerator\ServiceProvider;
+use GiveDataGenerator\DataGenerator\ServiceProvider;
 
 class TestServiceProvider extends TestCase
 {
@@ -106,7 +106,7 @@ class TestServiceProvider extends TestCase
         global $pagenow;
         $pagenow = 'edit.php';
         $_GET['post_type'] = 'give_forms';
-        $_GET['page'] = 'test-donation-generator';
+        $_GET['page'] = 'data-generator';
 
         // Set up admin user
         $user = $this->factory()->user->create_and_get([
@@ -119,11 +119,11 @@ class TestServiceProvider extends TestCase
 
         // Simulate enqueue_scripts action
         ob_start();
-        do_action('admin_enqueue_scripts', 'give_forms_page_test-donation-generator');
+        do_action('admin_enqueue_scripts', 'give_forms_page_data-generator');
         $output = ob_get_clean();
 
         // Verify script contains our object with AJAX URL
-        $this->assertStringContainsString('testDonationGenerator', $output);
+        $this->assertStringContainsString('dataGenerator', $output);
         $this->assertStringContainsString(admin_url('admin-ajax.php'), $output);
         $this->assertStringContainsString('wp_create_nonce', $output);
     }
@@ -147,7 +147,7 @@ class TestServiceProvider extends TestCase
         $output = ob_get_clean();
 
         // Should not contain our script
-        $this->assertStringNotContainsString('testDonationGenerator', $output);
+        $this->assertStringNotContainsString('dataGenerator', $output);
     }
 
     /**

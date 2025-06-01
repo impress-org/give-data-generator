@@ -1,6 +1,6 @@
 <?php
 
-namespace GiveFaker\Tests\Unit\GiveFaker;
+namespace GiveDataGenerator\Tests\Unit\GiveDataGenerator;
 
 use Give\Campaigns\Models\Campaign;
 use Give\Campaigns\ValueObjects\CampaignGoalType;
@@ -8,7 +8,7 @@ use Give\Campaigns\ValueObjects\CampaignStatus;
 use Give\Campaigns\ValueObjects\CampaignType;
 use Give\Tests\TestCase;
 use Give\Tests\TestTraits\RefreshDatabase;
-use GiveFaker\TestDonationGenerator\AdminSettings;
+use GiveDataGenerator\DataGenerator\AdminSettings;
 
 class TestAdminSettings extends TestCase
 {
@@ -231,7 +231,7 @@ class TestAdminSettings extends TestCase
         $output = ob_get_clean();
 
         // Check that the form has the necessary IDs and classes for JavaScript to work
-        $this->assertStringContainsString('id="data-generator-form"', $output);
+        $this->assertStringContainsString('id="donation-generator-form"', $output);
         $this->assertStringContainsString('id="date_range"', $output);
         $this->assertStringContainsString('id="custom-date-range"', $output);
         $this->assertStringContainsString('id="generate-donations"', $output);

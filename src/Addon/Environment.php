@@ -1,11 +1,11 @@
 <?php
 
-namespace GiveFaker\Addon;
+namespace GiveDataGenerator\Addon;
 
 /**
  * Helper class responsible for checking the add-on environment.
  *
- * @package     GiveFaker\Addon\Helpers
+ * @package     GiveDataGenerator\Addon\Helpers
  * @copyright   Copyright (c) 2020, GiveWP
  */
 class Environment
@@ -39,7 +39,7 @@ class Environment
      */
     public static function giveMinRequiredVersionCheck()
     {
-        return defined('GIVE_VERSION') && version_compare(GIVE_VERSION, GIVE_FAKER_MIN_GIVE_VERSION, '>=');
+        return defined('GIVE_VERSION') && version_compare(GIVE_VERSION, GIVE_DATA_GENERATOR_MIN_GIVE_VERSION, '>=');
     }
 
     /**
