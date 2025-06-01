@@ -83,6 +83,8 @@ class DonationGenerator
             $dateRange = sanitize_text_field($_POST['date_range']);
             $donationMode = sanitize_text_field($_POST['donation_mode']);
             $donationStatus = sanitize_text_field($_POST['donation_status']);
+            $donorCreationMethod = sanitize_text_field($_POST['donor_creation_method'] ?? 'create_new');
+            $selectedDonorId = intval($_POST['selected_donor_id'] ?? 0);
             $startDate = sanitize_text_field($_POST['start_date']);
             $endDate = sanitize_text_field($_POST['end_date']);
 
@@ -108,6 +110,26 @@ class DonationGenerator
                 $donationStatus = 'complete'; // Default to complete
             }
 
+            // Validate donor creation method
+            if (!in_array($donorCreationMethod, ['create_new', 'use_existing', 'mixed', 'select_specific'])) {
+                $donorCreationMethod = 'create_new'; // Default to create new
+            }
+
+            // Validate selected donor if using specific selection
+            if ($donorCreationMethod === 'select_specific') {
+                if (empty($selectedDonorId)) {
+                    wp_send_json_error(['message' => __('Please select a specific donor.', 'give-data-generator')]);
+                    return;
+                }
+
+                // Verify the donor exists
+                $selectedDonor = Donor::find($selectedDonorId);
+                if (!$selectedDonor) {
+                    wp_send_json_error(['message' => __('The selected donor does not exist.', 'give-data-generator')]);
+                    return;
+                }
+            }
+
             // Get campaign
             $campaign = Campaign::find($campaignId);
             if (!$campaign) {
@@ -116,7 +138,7 @@ class DonationGenerator
             }
 
             // Generate donations
-            $generated = $this->generateDonations($campaign, $donationCount, $dateRange, $donationMode, $donationStatus, $startDate, $endDate);
+            $generated = $this->generateDonations($campaign, $donationCount, $dateRange, $donationMode, $donationStatus, $donorCreationMethod, $selectedDonorId, $startDate, $endDate);
 
             wp_send_json_success([
                 'message' => sprintf(
@@ -141,13 +163,15 @@ class DonationGenerator
      * @param string $dateRange
      * @param string $donationMode
      * @param string $donationStatus
+     * @param string $donorCreationMethod
+     * @param int $selectedDonorId
      * @param string $startDate
      * @param string $endDate
      *
      * @return int Number of donations generated
      * @throws Exception
      */
-    public function generateDonations(Campaign $campaign, int $count, string $dateRange, string $donationMode, string $donationStatus, string $startDate = '', string $endDate = ''): int
+    public function generateDonations(Campaign $campaign, int $count, string $dateRange, string $donationMode, string $donationStatus, string $donorCreationMethod, int $selectedDonorId, string $startDate = '', string $endDate = ''): int
     {
         $generated = 0;
         $errors = [];
@@ -162,7 +186,7 @@ class DonationGenerator
 
         for ($i = 0; $i < $count; $i++) {
             try {
-                $this->createTestDonation($campaign, $dateInfo, $donationMode, $donationStatus);
+                $this->createTestDonation($campaign, $dateInfo, $donationMode, $donationStatus, $donorCreationMethod, $selectedDonorId);
                 $generated++;
                 $consecutiveErrors = 0; // Reset consecutive error counter on success
             } catch (Exception $e) {
@@ -201,18 +225,25 @@ class DonationGenerator
      * @param array $dateInfo
      * @param string $donationMode
      * @param string $donationStatus
+     * @param string $donorCreationMethod
+     * @param int $selectedDonorId
      *
      * @throws Exception
      */
-    private function createTestDonation(Campaign $campaign, array $dateInfo, string $donationMode, string $donationStatus)
+    private function createTestDonation(Campaign $campaign, array $dateInfo, string $donationMode, string $donationStatus, string $donorCreationMethod, int $selectedDonorId)
     {
-        // Generate random donor data
+        // Generate random donor data for new donors
         $firstName = $this->getRandomItem($this->firstNames);
         $lastName = $this->getRandomItem($this->lastNames);
         $email = $this->generateRandomEmail($firstName, $lastName);
 
         // Create or get donor
-        $donor = $this->createTestDonor($firstName, $lastName, $email);
+        $donor = $this->createTestDonor($firstName, $lastName, $email, $donorCreationMethod, $selectedDonorId);
+
+        // Use actual donor information if we're using an existing donor
+        $donorFirstName = $donor->firstName ?? $firstName;
+        $donorLastName = $donor->lastName ?? $lastName;
+        $donorEmail = $donor->email ?? $email;
 
         // Generate random donation data
         $amount = $this->generateRandomAmount();
@@ -231,9 +262,9 @@ class DonationGenerator
             'type' => DonationType::SINGLE(),
             'amount' => new Money($amount * 100, give_get_currency()), // Convert to cents
             'donorId' => $donor->id,
-            'firstName' => $firstName,
-            'lastName' => $lastName,
-            'email' => $email,
+            'firstName' => $donorFirstName,
+            'lastName' => $donorLastName,
+            'email' => $donorEmail,
             'campaignId' => $campaign->id,
             'formId' => $formId,
             'formTitle' => $formTitle,
@@ -244,7 +275,7 @@ class DonationGenerator
         ];
 
         // Add optional fields if they have values
-        $phone = $this->generateRandomPhone();
+        $phone = $donor->phone ?? $this->generateRandomPhone();
         if ($phone) {
             $donationData['phone'] = $phone;
         }
@@ -285,13 +316,45 @@ class DonationGenerator
      * @param string $firstName
      * @param string $lastName
      * @param string $email
+     * @param string $donorCreationMethod
+     * @param int $selectedDonorId
      *
      * @return Donor
      * @throws Exception
      */
-    private function createTestDonor(string $firstName, string $lastName, string $email): Donor
+    private function createTestDonor(string $firstName, string $lastName, string $email, string $donorCreationMethod, int $selectedDonorId): Donor
     {
-        // Check if donor already exists
+        if ($donorCreationMethod === 'select_specific') {
+            // Use the specifically selected donor
+            $selectedDonor = Donor::find($selectedDonorId);
+            if ($selectedDonor) {
+                return $selectedDonor;
+            }
+            // If selected donor not found, fall back to creating a new one
+            error_log('Data Generator: Selected donor not found, falling back to create new');
+        }
+
+        if ($donorCreationMethod === 'use_existing') {
+            // Try to get a random existing donor
+            $existingDonor = $this->getRandomExistingDonor();
+            if ($existingDonor) {
+                return $existingDonor;
+            }
+            // If no existing donors found, fall back to creating a new one
+        }
+
+        if ($donorCreationMethod === 'mixed') {
+            // 50% chance to use existing donor, 50% chance to create new
+            if ($this->getRandomBoolean(0.5)) {
+                $existingDonor = $this->getRandomExistingDonor();
+                if ($existingDonor) {
+                    return $existingDonor;
+                }
+            }
+            // Fall through to create new donor
+        }
+
+        // For 'create_new' method or fallback, check if donor already exists by email
         $existingDonor = Donor::whereEmail($email);
 
         if ($existingDonor) {
@@ -306,6 +369,32 @@ class DonationGenerator
             'email' => $email,
             'phone' => $this->generateRandomPhone(),
         ]);
+    }
+
+    /**
+     * Get a random existing donor from the database.
+     *
+     * @since 1.0.0
+     *
+     * @return Donor|null
+     */
+    private function getRandomExistingDonor(): ?Donor
+    {
+        global $wpdb;
+
+        // Get a random donor ID from the database
+        $donorId = $wpdb->get_var("
+            SELECT id
+            FROM {$wpdb->prefix}give_donors
+            ORDER BY RAND()
+            LIMIT 1
+        ");
+
+        if ($donorId) {
+            return Donor::find($donorId);
+        }
+
+        return null;
     }
 
     /**

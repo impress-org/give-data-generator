@@ -69,7 +69,9 @@ class TestDonationGenerator extends TestCase
             $donationCount,
             'last_30_days',
             'test',
-            'complete'
+            'complete',
+            'create_new',
+            0
         );
 
         $this->assertEquals($donationCount, $generated);
@@ -94,7 +96,9 @@ class TestDonationGenerator extends TestCase
             3,
             'last_30_days',
             'test',
-            'complete'
+            'complete',
+            'create_new',
+            0
         );
 
         $this->assertEquals(3, $generated);
@@ -121,7 +125,9 @@ class TestDonationGenerator extends TestCase
             2,
             'last_30_days',
             'live',
-            'complete'
+            'complete',
+            'create_new',
+            0
         );
 
         $this->assertEquals(2, $generated);
@@ -151,6 +157,8 @@ class TestDonationGenerator extends TestCase
             'custom',
             'test',
             'complete',
+            'create_new',
+            0,
             $startDate,
             $endDate
         );
@@ -180,7 +188,9 @@ class TestDonationGenerator extends TestCase
             2,
             'last_90_days',
             'test',
-            'complete'
+            'complete',
+            'create_new',
+            0
         );
 
         $this->assertEquals(2, $generated);
@@ -209,7 +219,9 @@ class TestDonationGenerator extends TestCase
             10,
             'last_30_days',
             'test',
-            'complete'
+            'complete',
+            'create_new',
+            0
         );
 
         $donations = Donation::query()
@@ -235,7 +247,9 @@ class TestDonationGenerator extends TestCase
             5,
             'last_30_days',
             'test',
-            'complete'
+            'complete',
+            'create_new',
+            0
         );
 
         $donations = Donation::query()
@@ -269,7 +283,9 @@ class TestDonationGenerator extends TestCase
             20, // Generate more to ensure we get some with fees
             'last_30_days',
             'test',
-            'complete'
+            'complete',
+            'create_new',
+            0
         );
 
         $donations = Donation::query()
@@ -462,7 +478,9 @@ class TestDonationGenerator extends TestCase
             3,
             'last_30_days',
             'test',
-            'pending'
+            'pending',
+            'create_new',
+            0
         );
 
         $this->assertEquals(3, $generated);
@@ -473,7 +491,9 @@ class TestDonationGenerator extends TestCase
             2,
             'last_30_days',
             'test',
-            'refunded'
+            'refunded',
+            'create_new',
+            0
         );
 
         $this->assertEquals(2, $generated);
@@ -484,7 +504,9 @@ class TestDonationGenerator extends TestCase
             1,
             'last_30_days',
             'test',
-            'random'
+            'random',
+            'create_new',
+            0
         );
 
         $this->assertEquals(1, $generated);
@@ -492,6 +514,313 @@ class TestDonationGenerator extends TestCase
         // Verify donations were created (basic count check)
         $allDonations = Donation::query()->getAll();
         $this->assertGreaterThanOrEqual(6, count($allDonations));
+    }
+
+    /**
+     * Test creating donations with new donors only.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateDonationsWithCreateNewDonors()
+    {
+        // Create some existing donors first
+        $existingDonor = Donor::create([
+            'firstName' => 'John',
+            'lastName' => 'Doe',
+            'name' => 'John Doe',
+            'email' => 'existing@test.com',
+        ]);
+
+        $initialDonorCount = Donor::query()->count();
+
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            3,
+            'last_30_days',
+            'test',
+            'complete',
+            'create_new',
+            0
+        );
+
+        $this->assertEquals(3, $generated);
+
+        // Should have created 3 new donors
+        $finalDonorCount = Donor::query()->count();
+        $this->assertEquals($initialDonorCount + 3, $finalDonorCount);
+
+        // Verify that none of the donations used the existing donor
+        $donations = Donation::query()
+            ->where('campaignId', $this->testCampaign->id)
+            ->getAll();
+
+        foreach ($donations as $donation) {
+            $this->assertNotEquals($existingDonor->id, $donation->donorId);
+        }
+    }
+
+    /**
+     * Test creating donations with existing donors only.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateDonationsWithUseExistingDonors()
+    {
+        // Create some existing donors first
+        $existingDonors = [];
+        for ($i = 0; $i < 5; $i++) {
+            $existingDonors[] = Donor::create([
+                'firstName' => "Existing{$i}",
+                'lastName' => 'Donor',
+                'name' => "Existing{$i} Donor",
+                'email' => "existing{$i}@test.com",
+            ]);
+        }
+
+        $initialDonorCount = Donor::query()->count();
+
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            3,
+            'last_30_days',
+            'test',
+            'complete',
+            'use_existing',
+            0
+        );
+
+        $this->assertEquals(3, $generated);
+
+        // Should not have created any new donors
+        $finalDonorCount = Donor::query()->count();
+        $this->assertEquals($initialDonorCount, $finalDonorCount);
+
+        // Verify that all donations used existing donors
+        $donations = Donation::query()
+            ->where('campaignId', $this->testCampaign->id)
+            ->getAll();
+
+        $existingDonorIds = array_map(function($donor) {
+            return $donor->id;
+        }, $existingDonors);
+
+        foreach ($donations as $donation) {
+            $this->assertContains($donation->donorId, $existingDonorIds);
+        }
+    }
+
+    /**
+     * Test creating donations with mixed donor strategy.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateDonationsWithMixedDonors()
+    {
+        // Create some existing donors first
+        $existingDonors = [];
+        for ($i = 0; $i < 3; $i++) {
+            $existingDonors[] = Donor::create([
+                'firstName' => "Existing{$i}",
+                'lastName' => 'Donor',
+                'name' => "Existing{$i} Donor",
+                'email' => "existing{$i}@test.com",
+            ]);
+        }
+
+        $initialDonorCount = Donor::query()->count();
+
+        // Generate more donations to increase chance of both new and existing being used
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            10,
+            'last_30_days',
+            'test',
+            'complete',
+            'mixed',
+            0
+        );
+
+        $this->assertEquals(10, $generated);
+
+        // Should have some new donors created but not necessarily all
+        $finalDonorCount = Donor::query()->count();
+        $this->assertGreaterThanOrEqual($initialDonorCount, $finalDonorCount);
+
+        // Verify donations were created
+        $donations = Donation::query()
+            ->where('campaignId', $this->testCampaign->id)
+            ->getAll();
+
+        $this->assertCount(10, $donations);
+    }
+
+    /**
+     * Test fallback behavior when no existing donors are found.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateDonationsWithUseExistingButNoExistingDonors()
+    {
+        // Ensure no existing donors
+        $this->assertEquals(0, Donor::query()->count());
+
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            2,
+            'last_30_days',
+            'test',
+            'complete',
+            'use_existing',
+            0
+        );
+
+        $this->assertEquals(2, $generated);
+
+        // Should have created new donors as fallback
+        $finalDonorCount = Donor::query()->count();
+        $this->assertEquals(2, $finalDonorCount);
+
+        // Verify donations were created
+        $donations = Donation::query()
+            ->where('campaignId', $this->testCampaign->id)
+            ->getAll();
+
+        $this->assertCount(2, $donations);
+    }
+
+    /**
+     * Test that existing donor information is preserved in donations.
+     *
+     * @since 1.0.0
+     */
+    public function testExistingDonorInformationIsPreservedInDonations()
+    {
+        // Create an existing donor with specific information
+        $existingDonor = Donor::create([
+            'firstName' => 'Jane',
+            'lastName' => 'Smith',
+            'name' => 'Jane Smith',
+            'email' => 'jane.smith@test.com',
+            'phone' => '555-123-4567',
+        ]);
+
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            1,
+            'last_30_days',
+            'test',
+            'complete',
+            'use_existing',
+            0
+        );
+
+        $this->assertEquals(1, $generated);
+
+        // Get the created donation
+        $donation = Donation::query()
+            ->where('campaignId', $this->testCampaign->id)
+            ->get();
+
+        // Verify the donation uses the existing donor's information
+        $this->assertEquals($existingDonor->id, $donation->donorId);
+        $this->assertEquals('Jane', $donation->firstName);
+        $this->assertEquals('Smith', $donation->lastName);
+        $this->assertEquals('jane.smith@test.com', $donation->email);
+        $this->assertEquals('555-123-4567', $donation->phone);
+    }
+
+    /**
+     * Test creating donations with a specific selected donor.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateDonationsWithSelectSpecificDonor()
+    {
+        // Create a specific donor to use
+        $specificDonor = Donor::create([
+            'firstName' => 'Sarah',
+            'lastName' => 'Connor',
+            'name' => 'Sarah Connor',
+            'email' => 'sarah.connor@test.com',
+            'phone' => '555-987-6543',
+        ]);
+
+        // Create some other donors that should not be used
+        $otherDonor = Donor::create([
+            'firstName' => 'John',
+            'lastName' => 'Doe',
+            'name' => 'John Doe',
+            'email' => 'john.doe@test.com',
+        ]);
+
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            3,
+            'last_30_days',
+            'test',
+            'complete',
+            'select_specific',
+            $specificDonor->id
+        );
+
+        $this->assertEquals(3, $generated);
+
+        // Get all created donations
+        $donations = Donation::query()
+            ->where('campaignId', $this->testCampaign->id)
+            ->getAll();
+
+        $this->assertCount(3, $donations);
+
+        // Verify all donations use the specific donor
+        foreach ($donations as $donation) {
+            $this->assertEquals($specificDonor->id, $donation->donorId);
+            $this->assertEquals('Sarah', $donation->firstName);
+            $this->assertEquals('Connor', $donation->lastName);
+            $this->assertEquals('sarah.connor@test.com', $donation->email);
+            $this->assertEquals('555-987-6543', $donation->phone);
+
+            // Ensure it's not using the other donor
+            $this->assertNotEquals($otherDonor->id, $donation->donorId);
+        }
+    }
+
+    /**
+     * Test fallback behavior when selected donor doesn't exist.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateDonationsWithSelectSpecificDonorNotFound()
+    {
+        $nonExistentDonorId = 99999;
+
+        $generated = $this->generator->generateDonations(
+            $this->testCampaign,
+            2,
+            'last_30_days',
+            'test',
+            'complete',
+            'select_specific',
+            $nonExistentDonorId
+        );
+
+        $this->assertEquals(2, $generated);
+
+        // Should have created new donors as fallback
+        $finalDonorCount = Donor::query()->count();
+        $this->assertEquals(2, $finalDonorCount);
+
+        // Verify donations were created
+        $donations = Donation::query()
+            ->where('campaignId', $this->testCampaign->id)
+            ->getAll();
+
+        $this->assertCount(2, $donations);
+
+        // None of the donations should have the non-existent donor ID
+        foreach ($donations as $donation) {
+            $this->assertNotEquals($nonExistentDonorId, $donation->donorId);
+        }
     }
 
     /**

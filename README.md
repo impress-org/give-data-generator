@@ -6,6 +6,7 @@ A WordPress plugin that generates test data for GiveWP including donations, dono
 
 - Generate test donations using the GiveWP Donation Model
 - Generate test donor data with realistic information
+- Choose between creating new donors, using existing donors, or a mix of both
 - Select specific campaigns for donation generation
 - Configure the number of donations to generate (1-1000)
 - Set custom date ranges for when donations should be created
@@ -23,13 +24,19 @@ A WordPress plugin that generates test data for GiveWP including donations, dono
 
 1. Go to **Donations > Data Generator** in your WordPress admin
 2. Select a campaign from the dropdown
-3. Choose how many donations to generate (1-1000)
-4. Select a date range:
+3. Choose your donor creation method:
+   - **Create New Donors** - Generates unique new donors for each donation
+   - **Use Existing Donors** - Randomly selects from existing donors in your database
+   - **Mix of New and Existing** - Randomly creates new donors or uses existing ones (50/50 split)
+   - **Select Specific Donor** - Choose a specific existing donor to use for all generated donations
+4. If you selected "Select Specific Donor", choose the donor from the dropdown list
+5. Choose how many donations to generate (1-1000)
+6. Select a date range:
    - Last 30 Days
    - Last 90 Days
    - Last Year
    - Custom Range (specify start and end dates)
-5. Click "Generate Test Data"
+7. Click "Generate Test Data"
 
 ## Requirements
 

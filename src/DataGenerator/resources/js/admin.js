@@ -29,6 +29,12 @@ class DataGeneratorAdmin {
             subscriptionDateRangeSelect.addEventListener('change', this.toggleSubscriptionCustomDateRange);
         }
 
+        // Show/hide specific donor selection for donations tab
+        const donorCreationMethodSelect = document.getElementById('donor_creation_method');
+        if (donorCreationMethodSelect) {
+            donorCreationMethodSelect.addEventListener('change', this.toggleSpecificDonorSelection);
+        }
+
         // Handle donation form submission
         const donationForm = document.getElementById('donation-generator-form');
         if (donationForm) {
@@ -65,6 +71,14 @@ class DataGeneratorAdmin {
     }
 
     /**
+     * Toggle specific donor selection visibility
+     */
+    toggleSpecificDonorSelection(event) {
+        const specificDonorSelection = document.getElementById('specific-donor-selection');
+        specificDonorSelection.style.display = event.target.value === 'select_specific' ? 'table-row' : 'none';
+    }
+
+    /**
      * Handle donation form submission
      */
     async handleDonationFormSubmission(event) {
@@ -85,6 +99,8 @@ class DataGeneratorAdmin {
             nonce: dataGenerator.nonce,
             campaign_id: document.getElementById('campaign_id').value,
             donation_count: document.getElementById('donation_count').value,
+            donor_creation_method: document.getElementById('donor_creation_method').value,
+            selected_donor_id: document.getElementById('selected_donor_id').value,
             date_range: document.getElementById('date_range').value,
             donation_mode: document.getElementById('donation_mode').value,
             donation_status: document.getElementById('donation_status').value,

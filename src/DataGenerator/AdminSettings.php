@@ -6,6 +6,7 @@ use Give\Campaigns\Models\Campaign;
 use Give\Donations\ValueObjects\DonationStatus;
 use Give\Subscriptions\ValueObjects\SubscriptionStatus;
 use Give\Subscriptions\ValueObjects\SubscriptionPeriod;
+use Give\Donors\Models\Donor;
 
 /**
  * Admin settings for the Data Generator.
@@ -187,6 +188,40 @@ class AdminSettings
                                 <?php endforeach; ?>
                             </select>
                             <p class="description"><?php _e('Choose which campaign the test donations should be associated with.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="donor_creation_method"><?php _e('Donor Selection', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <select name="donor_creation_method" id="donor_creation_method" class="regular-text">
+                                <option value="create_new"><?php _e('Create New Donors', 'give-data-generator'); ?></option>
+                                <option value="use_existing"><?php _e('Use Existing Donors', 'give-data-generator'); ?></option>
+                                <option value="mixed"><?php _e('Mix of New and Existing', 'give-data-generator'); ?></option>
+                                <option value="select_specific"><?php _e('Select Specific Donor', 'give-data-generator'); ?></option>
+                            </select>
+                            <p class="description"><?php _e('Choose whether to create new donors for each donation or use existing donors from your database.', 'give-data-generator'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr id="specific-donor-selection" style="display: none;">
+                        <th scope="row">
+                            <label for="selected_donor_id"><?php _e('Select Donor', 'give-data-generator'); ?></label>
+                        </th>
+                        <td>
+                            <select name="selected_donor_id" id="selected_donor_id" class="regular-text">
+                                <option value=""><?php _e('Choose a donor...', 'give-data-generator'); ?></option>
+                                <?php
+                                $donors = $this->getExistingDonors();
+                                foreach ($donors as $donor): ?>
+                                    <option value="<?php echo esc_attr($donor->id); ?>">
+                                        <?php echo esc_html($donor->name . ' (' . $donor->email . ')'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description"><?php _e('Select a specific donor to use for all generated donations.', 'give-data-generator'); ?></p>
                         </td>
                     </tr>
 
@@ -714,6 +749,36 @@ class AdminSettings
             return $campaigns;
         } catch (\Exception $e) {
             error_log('Data Generator: Error getting campaigns: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get existing donors.
+     *
+     * @since 1.0.0
+     * @return array
+     */
+    private function getExistingDonors(): array
+    {
+        try {
+            // Get up to 100 most recent donors to avoid overwhelming the dropdown
+            $donors = Donor::query()
+                ->orderBy('id', 'DESC')
+                ->limit(100)
+                ->getAll();
+
+            // Ensure we always return an array
+            if (!is_array($donors)) {
+                $donors = [];
+            }
+
+            // Debug: Log how many donors we found
+            error_log('Data Generator: Found ' . count($donors) . ' existing donors');
+
+            return $donors;
+        } catch (\Exception $e) {
+            error_log('Data Generator: Error getting existing donors: ' . $e->getMessage());
             return [];
         }
     }
