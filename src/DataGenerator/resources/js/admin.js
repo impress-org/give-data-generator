@@ -52,6 +52,12 @@ class DataGeneratorAdmin {
         if (subscriptionForm) {
             subscriptionForm.addEventListener('submit', this.handleSubscriptionFormSubmission);
         }
+
+        // Handle cleanup button clicks
+        const cleanupButtons = document.querySelectorAll('.cleanup-button');
+        cleanupButtons.forEach(button => {
+            button.addEventListener('click', this.handleCleanupAction);
+        });
     }
 
     /**
@@ -231,6 +237,64 @@ class DataGeneratorAdmin {
     }
 
     /**
+     * Handle cleanup action
+     */
+    async handleCleanupAction(event) {
+        const button = event.target;
+        const action = button.getAttribute('data-action');
+        const spinnerId = button.id + '-spinner';
+        const spinner = document.getElementById(spinnerId);
+        const results = document.getElementById('cleanup-results');
+
+        // Ask for confirmation
+        const confirmMessages = {
+            'delete_test_donations': 'Are you sure you want to delete all test mode donations? This action cannot be undone.',
+            'delete_test_subscriptions': 'Are you sure you want to delete all test mode subscriptions? This action cannot be undone.',
+            'archive_campaigns': 'Are you sure you want to archive all active campaigns? This action cannot be undone.'
+        };
+
+        if (!confirm(confirmMessages[action])) {
+            return;
+        }
+
+        // Disable button and show loading
+        button.disabled = true;
+        if (spinner) {
+            spinner.classList.add('is-active');
+        }
+        results.style.display = 'none';
+
+        // Prepare form data
+        const formData = new URLSearchParams({
+            action: 'cleanup_test_data',
+            nonce: dataGenerator.cleanupNonce,
+            action_type: action
+        });
+
+        try {
+            // Submit fetch request
+            const response = await fetch(dataGenerator.ajaxUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            DataGeneratorAdmin.handleSuccess(data, 'cleanup-results', 'cleanup-results-content');
+        } catch (error) {
+            DataGeneratorAdmin.handleError('cleanup-results', 'cleanup-results-content');
+        } finally {
+            // Re-enable button and hide spinner
+            button.disabled = false;
+            if (spinner) {
+                spinner.classList.remove('is-active');
+            }
+        }
+    }
+
+    /**
      * Handle fetch success response
      */
     static handleSuccess(response, resultsId, contentId) {
@@ -273,7 +337,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Only initialize if we're on the correct page
     if (document.getElementById('donation-generator-form') ||
         document.getElementById('campaign-generator-form') ||
-        document.getElementById('subscription-generator-form')) {
+        document.getElementById('subscription-generator-form') ||
+        document.getElementById('cleanup-panel')) {
         const admin = new DataGeneratorAdmin();
         admin.init();
     }

@@ -26,6 +26,7 @@ class AdminSettings
         'campaigns' => 'Campaigns',
         'donations' => 'Donations',
         'subscriptions' => 'Subscriptions',
+        'cleanup' => 'Clean Up',
     ];
 
     /**
@@ -148,6 +149,9 @@ class AdminSettings
                 break;
             case 'subscriptions':
                 $this->renderSubscriptionsTab();
+                break;
+            case 'cleanup':
+                $this->renderCleanUpTab();
                 break;
             default:
                 $this->renderDonationsTab();
@@ -662,6 +666,119 @@ class AdminSettings
                 <div id="subscription-results-content"></div>
             </div>
         </div>
+        <?php
+    }
+
+    /**
+     * Render the clean up tab content.
+     *
+     * @since 1.0.0
+     */
+    private function renderCleanUpTab(): void
+    {
+        ?>
+        <div class="tab-panel" id="cleanup-panel">
+            <div class="notice notice-warning">
+                <p><strong><?php _e('Warning:', 'give-data-generator'); ?></strong> <?php _e('These actions are permanent and cannot be undone. Please ensure you have a backup before proceeding.', 'give-data-generator'); ?></p>
+            </div>
+
+            <div class="cleanup-actions">
+                <div class="cleanup-action-card">
+                    <h3><?php _e('Delete Test Mode Donations', 'give-data-generator'); ?></h3>
+                    <p><?php _e('This will permanently delete all donations that were made in test mode.', 'give-data-generator'); ?></p>
+                    <button type="button" class="button button-secondary cleanup-button"
+                            data-action="delete_test_donations"
+                            id="delete-test-donations">
+                        <?php _e('Delete Test Donations', 'give-data-generator'); ?>
+                    </button>
+                    <span class="spinner cleanup-spinner" id="delete-donations-spinner" style="float: none; margin-left: 10px;"></span>
+                </div>
+
+                <div class="cleanup-action-card">
+                    <h3><?php _e('Delete Test Mode Subscriptions', 'give-data-generator'); ?></h3>
+                    <p><?php _e('This will permanently delete all subscriptions that were created in test mode, along with their related donations.', 'give-data-generator'); ?></p>
+                    <button type="button" class="button button-secondary cleanup-button"
+                            data-action="delete_test_subscriptions"
+                            id="delete-test-subscriptions">
+                        <?php _e('Delete Test Subscriptions', 'give-data-generator'); ?>
+                    </button>
+                    <span class="spinner cleanup-spinner" id="delete-subscriptions-spinner" style="float: none; margin-left: 10px;"></span>
+                </div>
+
+                <div class="cleanup-action-card">
+                    <h3><?php _e('Archive All Campaigns', 'give-data-generator'); ?></h3>
+                    <p><?php _e('This will archive all active campaigns. Archived campaigns will no longer be accessible for donations.', 'give-data-generator'); ?></p>
+                    <button type="button" class="button button-secondary cleanup-button"
+                            data-action="archive_campaigns"
+                            id="archive-campaigns">
+                        <?php _e('Archive Campaigns', 'give-data-generator'); ?>
+                    </button>
+                    <span class="spinner cleanup-spinner" id="archive-campaigns-spinner" style="float: none; margin-left: 10px;"></span>
+                </div>
+            </div>
+
+            <div id="cleanup-results" style="display: none;">
+                <h3><?php _e('Cleanup Results', 'give-data-generator'); ?></h3>
+                <div id="cleanup-results-content"></div>
+            </div>
+        </div>
+
+        <style>
+            .cleanup-actions {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin-top: 20px;
+            }
+
+            .cleanup-action-card {
+                background: #fff;
+                border: 1px solid #c3c4c7;
+                border-radius: 5px;
+                padding: 20px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+
+            .cleanup-action-card h3 {
+                margin-top: 0;
+                color: #d63638;
+            }
+
+            .cleanup-action-card p {
+                color: #646970;
+                margin-bottom: 15px;
+            }
+
+            .cleanup-button {
+                background: #d63638 !important;
+                border-color: #d63638 !important;
+                color: #fff !important;
+            }
+
+            .cleanup-button:hover {
+                background: #b32d2e !important;
+                border-color: #b32d2e !important;
+            }
+
+            .cleanup-button:disabled {
+                background: #dcdcde !important;
+                border-color: #dcdcde !important;
+                color: #a7aaad !important;
+                cursor: not-allowed;
+            }
+
+            .cleanup-spinner.is-active {
+                visibility: visible;
+            }
+
+            #cleanup-results {
+                margin-top: 20px;
+                padding: 15px;
+                background: #fff;
+                border: 1px solid #c3c4c7;
+                border-radius: 5px;
+            }
+        </style>
         <?php
     }
 

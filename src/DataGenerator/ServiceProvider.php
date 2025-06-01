@@ -8,6 +8,7 @@ use GiveDataGenerator\DataGenerator\AdminSettings;
 use GiveDataGenerator\DataGenerator\DonationGenerator;
 use GiveDataGenerator\DataGenerator\CampaignGenerator;
 use GiveDataGenerator\DataGenerator\SubscriptionGenerator;
+use GiveDataGenerator\DataGenerator\CleanUpManager;
 
 /**
  * Service provider for the Data Generator domain.
@@ -25,6 +26,7 @@ class ServiceProvider implements ServiceProviderInterface
         give()->singleton(DonationGenerator::class);
         give()->singleton(CampaignGenerator::class);
         give()->singleton(SubscriptionGenerator::class);
+        give()->singleton(CleanUpManager::class);
         give()->singleton(AdminSettings::class);
     }
 
@@ -40,6 +42,7 @@ class ServiceProvider implements ServiceProviderInterface
         Hooks::addAction('wp_ajax_generate_test_donations', DonationGenerator::class, 'handleAjaxRequest');
         Hooks::addAction('wp_ajax_generate_test_campaigns', CampaignGenerator::class, 'handleAjaxRequest');
         Hooks::addAction('wp_ajax_generate_test_subscriptions', SubscriptionGenerator::class, 'handleAjaxRequest');
+        Hooks::addAction('wp_ajax_cleanup_test_data', CleanUpManager::class, 'handleAjaxRequest');
 
         // Enqueue admin scripts
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
@@ -74,6 +77,7 @@ class ServiceProvider implements ServiceProviderInterface
             'nonce' => wp_create_nonce('data_generator_nonce'),
             'campaignNonce' => wp_create_nonce('campaign_generator_nonce'),
             'subscriptionNonce' => wp_create_nonce('subscription_generator_nonce'),
+            'cleanupNonce' => wp_create_nonce('cleanup_nonce'),
             'strings' => [
                 'errorMessage' => __('An error occurred while generating data.', 'give-data-generator'),
                 'processing' => __('Processing...', 'give-data-generator'),
