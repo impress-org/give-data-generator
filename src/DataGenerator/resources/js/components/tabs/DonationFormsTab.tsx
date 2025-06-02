@@ -8,6 +8,7 @@ import {
     Notice,
     Card,
     CardBody,
+    CardHeader,
     Flex,
     FlexItem
 } from '@wordpress/components';
@@ -140,6 +141,9 @@ const DonationFormsTab: React.FC = () => {
 
     return (
         <Card>
+            <CardHeader>
+                <h2>{__('Generate Test Donation Forms', 'give-data-generator')}</h2>
+            </CardHeader>
             <CardBody>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <table className="form-table">

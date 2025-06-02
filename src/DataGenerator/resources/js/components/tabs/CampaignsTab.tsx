@@ -8,6 +8,7 @@ import {
     Notice,
     Card,
     CardBody,
+    CardHeader,
     Flex,
     FlexItem
 } from '@wordpress/components';
@@ -118,6 +119,9 @@ const CampaignsTab: React.FC = () => {
 
     return (
         <Card>
+            <CardHeader>
+                <h2>{__('Generate Test Campaigns', 'give-data-generator')}</h2>
+            </CardHeader>
             <CardBody>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <table className="form-table">
@@ -443,7 +447,7 @@ const CampaignsTab: React.FC = () => {
                         >
                             {isSubmitting
                                 ? __('Generating...', 'give-data-generator')
-                                : __('Generate Test Campaigns', 'give-data-generator')
+                                : __('Generate Campaigns', 'give-data-generator')
                             }
                         </Button>
                     </p>

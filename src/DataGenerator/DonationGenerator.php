@@ -5,6 +5,7 @@ namespace GiveDataGenerator\DataGenerator;
 use DateTime;
 use Exception;
 use Give\Campaigns\Models\Campaign;
+use Give\Campaigns\ValueObjects\CampaignStatus;
 use Give\Donations\Models\Donation;
 use Give\Donations\Properties\BillingAddress;
 use Give\Donations\ValueObjects\DonationMode;
@@ -145,6 +146,99 @@ class DonationGenerator
                     __('Successfully generated %d test donations for campaign "%s".', 'give-data-generator'),
                     $generated,
                     $campaign->title
+                )
+            ]);
+
+        } catch (Exception $e) {
+            wp_send_json_error(['message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Handle AJAX request for generating bulk test donations for all active campaigns.
+     *
+     * @since 1.0.0
+     */
+    public function handleBulkAjaxRequest()
+    {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'data_generator_nonce')) {
+            wp_send_json_error(['message' => __('Security check failed.', 'give-data-generator')]);
+            return;
+        }
+
+        // Check user permissions
+        if (!current_user_can('manage_give_settings')) {
+            wp_send_json_error(['message' => __('You do not have permission to perform this action.', 'give-data-generator')]);
+            return;
+        }
+
+        try {
+            $donationsPerCampaign = intval($_POST['donations_per_campaign']);
+            $dateRange = sanitize_text_field($_POST['date_range']);
+            $donationMode = sanitize_text_field($_POST['donation_mode']);
+            $donationStatus = sanitize_text_field($_POST['donation_status']);
+            $donorCreationMethod = sanitize_text_field($_POST['donor_creation_method'] ?? 'create_new');
+            $selectedDonorId = intval($_POST['selected_donor_id'] ?? 0);
+            $startDate = sanitize_text_field($_POST['start_date']);
+            $endDate = sanitize_text_field($_POST['end_date']);
+
+            // Validate inputs
+            if ($donationsPerCampaign < 1 || $donationsPerCampaign > 100) {
+                wp_send_json_error(['message' => __('Number of donations per campaign must be between 1 and 100.', 'give-data-generator')]);
+                return;
+            }
+
+            // Validate donation mode
+            if (!in_array($donationMode, ['test', 'live'])) {
+                $donationMode = 'test'; // Default to test mode
+            }
+
+            // Validate donation status
+            $validStatuses = ['complete', 'pending', 'processing', 'refunded', 'failed', 'cancelled', 'abandoned', 'preapproval', 'revoked', 'random'];
+            if (!in_array($donationStatus, $validStatuses)) {
+                $donationStatus = 'complete'; // Default to complete
+            }
+
+            // Validate donor creation method
+            if (!in_array($donorCreationMethod, ['create_new', 'use_existing', 'mixed', 'select_specific'])) {
+                $donorCreationMethod = 'create_new'; // Default to create new
+            }
+
+            // Validate selected donor if using specific selection
+            if ($donorCreationMethod === 'select_specific') {
+                if (empty($selectedDonorId)) {
+                    wp_send_json_error(['message' => __('Please select a specific donor.', 'give-data-generator')]);
+                    return;
+                }
+
+                // Verify the donor exists
+                $selectedDonor = Donor::find($selectedDonorId);
+                if (!$selectedDonor) {
+                    wp_send_json_error(['message' => __('The selected donor does not exist.', 'give-data-generator')]);
+                    return;
+                }
+            }
+
+            // Get all active campaigns
+            $campaigns = Campaign::query()
+                ->where('status', CampaignStatus::ACTIVE()->getValue())
+                ->getAll();
+
+            if (empty($campaigns)) {
+                wp_send_json_error(['message' => __('No active campaigns found.', 'give-data-generator')]);
+                return;
+            }
+
+            // Generate donations for all campaigns
+            $totalGenerated = $this->generateBulkDonations($campaigns, $donationsPerCampaign, $dateRange, $donationMode, $donationStatus, $donorCreationMethod, $selectedDonorId, $startDate, $endDate);
+
+            wp_send_json_success([
+                'message' => sprintf(
+                    __('Successfully generated %d test donations across %d active campaigns (%d donations per campaign).', 'give-data-generator'),
+                    $totalGenerated,
+                    count($campaigns),
+                    $donationsPerCampaign
                 )
             ]);
 
@@ -744,6 +838,89 @@ class DonationGenerator
 
         // Fallback
         return DonationStatus::COMPLETE();
+    }
+
+    /**
+     * Generate test donations for multiple campaigns (bulk generation).
+     *
+     * @since 1.0.0
+     *
+     * @param Campaign[] $campaigns
+     * @param int $donationsPerCampaign
+     * @param string $dateRange
+     * @param string $donationMode
+     * @param string $donationStatus
+     * @param string $donorCreationMethod
+     * @param int $selectedDonorId
+     * @param string $startDate
+     * @param string $endDate
+     *
+     * @return int Total number of donations generated across all campaigns
+     * @throws Exception
+     */
+    public function generateBulkDonations(array $campaigns, int $donationsPerCampaign, string $dateRange, string $donationMode, string $donationStatus, string $donorCreationMethod, int $selectedDonorId, string $startDate = '', string $endDate = ''): int
+    {
+        $totalGenerated = 0;
+        $errors = [];
+        $campaignErrors = [];
+
+        try {
+            $dateInfo = $this->getDateRange($dateRange, $startDate, $endDate);
+        } catch (Exception $e) {
+            error_log('Data Generator - Bulk Date Range Error: ' . $e->getMessage());
+            throw $e;
+        }
+
+        foreach ($campaigns as $campaign) {
+            try {
+                $generatedForCampaign = 0;
+                $consecutiveErrors = 0;
+
+                for ($i = 0; $i < $donationsPerCampaign; $i++) {
+                    try {
+                        $this->createTestDonation($campaign, $dateInfo, $donationMode, $donationStatus, $donorCreationMethod, $selectedDonorId);
+                        $generatedForCampaign++;
+                        $totalGenerated++;
+                        $consecutiveErrors = 0; // Reset consecutive error counter on success
+                    } catch (Exception $e) {
+                        $consecutiveErrors++;
+                        $errorMessage = 'Data Generator Bulk Error (campaign: ' . $campaign->title . ', iteration ' . ($i + 1) . '): ' . $e->getMessage();
+                        error_log($errorMessage);
+                        $errors[] = $errorMessage;
+
+                        // Stop this campaign if we have too many consecutive errors
+                        if ($consecutiveErrors >= 5) {
+                            error_log('Data Generator Bulk: Too many consecutive errors for campaign "' . $campaign->title . '", skipping to next campaign. Last error: ' . $e->getMessage());
+                            $campaignErrors[] = sprintf('Skipped campaign "%s" due to repeated errors', $campaign->title);
+                            break;
+                        }
+                    }
+                }
+
+                if ($generatedForCampaign > 0) {
+                    error_log('Data Generator Bulk: Generated ' . $generatedForCampaign . ' donations for campaign "' . $campaign->title . '"');
+                }
+
+            } catch (Exception $e) {
+                $errorMessage = 'Data Generator Bulk: Fatal error processing campaign "' . $campaign->title . '": ' . $e->getMessage();
+                error_log($errorMessage);
+                $campaignErrors[] = sprintf('Failed to process campaign "%s": %s', $campaign->title, $e->getMessage());
+                continue; // Continue with next campaign
+            }
+        }
+
+        // Log summary of bulk generation
+        if (!empty($campaignErrors)) {
+            error_log('Data Generator Bulk: Encountered issues with ' . count($campaignErrors) . ' campaigns: ' . implode('; ', $campaignErrors));
+        }
+
+        if (!empty($errors)) {
+            error_log('Data Generator Bulk: Encountered ' . count($errors) . ' total errors during bulk generation: ' . implode('; ', array_slice($errors, -5))); // Log last 5 errors
+        }
+
+        error_log('Data Generator Bulk: Successfully generated ' . $totalGenerated . ' donations across ' . count($campaigns) . ' campaigns');
+
+        return $totalGenerated;
     }
 }
 

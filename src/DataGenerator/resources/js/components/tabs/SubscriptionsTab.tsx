@@ -7,6 +7,7 @@ import {
     Notice,
     Card,
     CardBody,
+    CardHeader,
     Flex,
     FlexItem
 } from '@wordpress/components';
@@ -157,6 +158,9 @@ const SubscriptionsTab: React.FC = () => {
 
     return (
         <Card>
+            <CardHeader>
+                <h2>{__('Generate Test Subscriptions', 'give-data-generator')}</h2>
+            </CardHeader>
             <CardBody>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <table className="form-table">
@@ -519,7 +523,7 @@ const SubscriptionsTab: React.FC = () => {
                                 ? __('Generating...', 'give-data-generator')
                                 : campaigns.length === 0
                                     ? __('No Campaigns Available', 'give-data-generator')
-                                    : __('Generate Test Subscriptions', 'give-data-generator')
+                                    : __('Generate Subscriptions', 'give-data-generator')
                             }
                         </Button>
                     </p>

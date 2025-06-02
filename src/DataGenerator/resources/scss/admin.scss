@@ -64,7 +64,7 @@
                 background: rgba(56, 88, 233, 0.04);
                 color: #1e1e1e;
                 font-weight: 500;
-                border-left: 4px solid #3858e9;
+                border-left: 4px solid var(--wp-admin-theme-color);
 
                 /* Ensure no pseudo-element borders on active state */
                 &::before,
@@ -179,7 +179,7 @@
                 /* Active tab styling for mobile - left accent only */
                 &[aria-selected="true"],
                 &.is-active {
-                    border-left: 4px solid #3858e9;
+                    border-left: 4px solid var(--wp-admin-theme-color);
                     background: rgba(56, 88, 233, 0.04);
 
                     /* Ensure no pseudo-element borders on mobile active state */

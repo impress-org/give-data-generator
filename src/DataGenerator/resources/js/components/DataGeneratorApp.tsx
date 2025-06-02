@@ -1,9 +1,9 @@
 import React from 'react';
 import { __ } from '@wordpress/i18n';
 import { TabPanel } from '@wordpress/components';
-import DonationFormsTab from './tabs/DonationFormsTab';
-import DonationsTab from './tabs/DonationsTab';
 import CampaignsTab from './tabs/CampaignsTab';
+import DonationsTab from './tabs/DonationsTab';
+import DonationFormsTab from './tabs/DonationFormsTab';
 import SubscriptionsTab from './tabs/SubscriptionsTab';
 import CleanupTab from './tabs/CleanupTab';
 

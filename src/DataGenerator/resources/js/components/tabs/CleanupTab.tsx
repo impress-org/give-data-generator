@@ -4,7 +4,8 @@ import {
     Button,
     Notice,
     Card,
-    CardBody
+    CardBody,
+    CardHeader
 } from '@wordpress/components';
 import { useDispatch } from '@wordpress/data';
 import { ApiResponse, ResultState } from '../../types';
@@ -106,6 +107,9 @@ const CleanupTab: React.FC = () => {
 
     return (
         <Card>
+            <CardHeader>
+                <h2>{__('Clean Up Test Data', 'give-data-generator')}</h2>
+            </CardHeader>
             <CardBody>
                 <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px' }}>
                     <strong style={{ color: '#856404' }}>⚠️ {__('Warning:', 'give-data-generator')}</strong>

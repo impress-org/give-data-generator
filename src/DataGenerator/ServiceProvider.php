@@ -62,6 +62,7 @@ class ServiceProvider implements ServiceProviderInterface
     {
         // Handle AJAX requests
         Hooks::addAction('wp_ajax_generate_test_donations', DonationGenerator::class, 'handleAjaxRequest');
+        Hooks::addAction('wp_ajax_generate_bulk_test_donations', DonationGenerator::class, 'handleBulkAjaxRequest');
         Hooks::addAction('wp_ajax_generate_test_campaigns', CampaignGenerator::class, 'handleAjaxRequest');
         Hooks::addAction('wp_ajax_generate_test_donation_forms', DonationFormGenerator::class, 'handleAjaxRequest');
         Hooks::addAction('wp_ajax_generate_test_subscriptions', SubscriptionGenerator::class, 'handleAjaxRequest');

@@ -786,40 +786,199 @@ class TestDonationGenerator extends TestCase
     }
 
     /**
-     * Test fallback behavior when selected donor doesn't exist.
+     * Test generating donations with select specific donor not found.
      *
      * @since 1.0.0
      */
     public function testGenerateDonationsWithSelectSpecificDonorNotFound()
     {
-        $nonExistentDonorId = 99999;
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('The selected donor does not exist.');
 
-        $generated = $this->generator->generateDonations(
+        $this->generator->generateDonations(
             $this->testCampaign,
             2,
             'last_30_days',
             'test',
             'complete',
             'select_specific',
-            $nonExistentDonorId
+            999999 // Non-existent donor ID
+        );
+    }
+
+    /**
+     * Test bulk donation generation across multiple campaigns.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateBulkDonationsAcrossMultipleCampaigns()
+    {
+        // Create additional test campaigns
+        $campaign2 = Campaign::create([
+            'type' => CampaignType::CORE(),
+            'title' => 'Test Campaign 2',
+            'shortDescription' => 'Test campaign 2 description',
+            'longDescription' => 'Test campaign 2 long description',
+            'logo' => '',
+            'image' => '',
+            'primaryColor' => '#28C77B',
+            'secondaryColor' => '#FFA200',
+            'goal' => 200000, // $2000
+            'goalType' => CampaignGoalType::AMOUNT(),
+            'status' => CampaignStatus::ACTIVE()
+        ]);
+
+        $campaign3 = Campaign::create([
+            'type' => CampaignType::CORE(),
+            'title' => 'Test Campaign 3',
+            'shortDescription' => 'Test campaign 3 description',
+            'longDescription' => 'Test campaign 3 long description',
+            'logo' => '',
+            'image' => '',
+            'primaryColor' => '#28C77B',
+            'secondaryColor' => '#FFA200',
+            'goal' => 300000, // $3000
+            'goalType' => CampaignGoalType::AMOUNT(),
+            'status' => CampaignStatus::ACTIVE()
+        ]);
+
+        $campaigns = [$this->testCampaign, $campaign2, $campaign3];
+        $donationsPerCampaign = 3;
+
+        $totalGenerated = $this->generator->generateBulkDonations(
+            $campaigns,
+            $donationsPerCampaign,
+            'last_30_days',
+            'test',
+            'complete',
+            'create_new',
+            0
         );
 
-        $this->assertEquals(2, $generated);
+        // Should generate 3 donations per campaign across 3 campaigns = 9 total
+        $expectedTotal = count($campaigns) * $donationsPerCampaign;
+        $this->assertEquals($expectedTotal, $totalGenerated);
 
-        // Should have created new donors as fallback
-        $finalDonorCount = Donor::query()->count();
-        $this->assertEquals(2, $finalDonorCount);
+        // Verify donations were created for each campaign
+        foreach ($campaigns as $campaign) {
+            $donations = Donation::query()
+                ->where('campaignId', $campaign->id)
+                ->getAll();
 
-        // Verify donations were created
-        $donations = Donation::query()
-            ->where('campaignId', $this->testCampaign->id)
-            ->getAll();
+            $this->assertCount($donationsPerCampaign, $donations, "Campaign {$campaign->title} should have {$donationsPerCampaign} donations");
 
-        $this->assertCount(2, $donations);
+            // Verify all donations are in test mode and complete status
+            foreach ($donations as $donation) {
+                $this->assertEquals('test', $donation->mode->getValue());
+                $this->assertEquals('COMPLETE', $donation->status->getValue());
+            }
+        }
+    }
 
-        // None of the donations should have the non-existent donor ID
-        foreach ($donations as $donation) {
-            $this->assertNotEquals($nonExistentDonorId, $donation->donorId);
+    /**
+     * Test bulk donation generation with specific donor.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateBulkDonationsWithSpecificDonor()
+    {
+        // Create a test donor
+        $testDonor = Donor::create([
+            'firstName' => 'Test',
+            'lastName' => 'Donor',
+            'name' => 'Test Donor',
+            'email' => 'test@example.com',
+        ]);
+
+        // Create additional test campaign
+        $campaign2 = Campaign::create([
+            'type' => CampaignType::CORE(),
+            'title' => 'Test Campaign 2',
+            'shortDescription' => 'Test campaign 2 description',
+            'longDescription' => 'Test campaign 2 long description',
+            'logo' => '',
+            'image' => '',
+            'primaryColor' => '#28C77B',
+            'secondaryColor' => '#FFA200',
+            'goal' => 200000, // $2000
+            'goalType' => CampaignGoalType::AMOUNT(),
+            'status' => CampaignStatus::ACTIVE()
+        ]);
+
+        $campaigns = [$this->testCampaign, $campaign2];
+        $donationsPerCampaign = 2;
+
+        $totalGenerated = $this->generator->generateBulkDonations(
+            $campaigns,
+            $donationsPerCampaign,
+            'last_30_days',
+            'test',
+            'complete',
+            'select_specific',
+            $testDonor->id
+        );
+
+        // Should generate 2 donations per campaign across 2 campaigns = 4 total
+        $expectedTotal = count($campaigns) * $donationsPerCampaign;
+        $this->assertEquals($expectedTotal, $totalGenerated);
+
+        // Verify all donations are associated with the specific donor
+        $allDonations = Donation::query()->getAll();
+        foreach ($allDonations as $donation) {
+            $this->assertEquals($testDonor->id, $donation->donorId);
+            $this->assertEquals($testDonor->email, $donation->email);
+        }
+    }
+
+    /**
+     * Test bulk donation generation with custom date range.
+     *
+     * @since 1.0.0
+     */
+    public function testGenerateBulkDonationsWithCustomDateRange()
+    {
+        // Create additional test campaign
+        $campaign2 = Campaign::create([
+            'type' => CampaignType::CORE(),
+            'title' => 'Test Campaign 2',
+            'shortDescription' => 'Test campaign 2 description',
+            'longDescription' => 'Test campaign 2 long description',
+            'logo' => '',
+            'image' => '',
+            'primaryColor' => '#28C77B',
+            'secondaryColor' => '#FFA200',
+            'goal' => 200000, // $2000
+            'goalType' => CampaignGoalType::AMOUNT(),
+            'status' => CampaignStatus::ACTIVE()
+        ]);
+
+        $campaigns = [$this->testCampaign, $campaign2];
+        $donationsPerCampaign = 2;
+        $startDate = '2024-01-01';
+        $endDate = '2024-01-31';
+
+        $totalGenerated = $this->generator->generateBulkDonations(
+            $campaigns,
+            $donationsPerCampaign,
+            'custom',
+            'test',
+            'complete',
+            'create_new',
+            0,
+            $startDate,
+            $endDate
+        );
+
+        // Should generate 2 donations per campaign across 2 campaigns = 4 total
+        $expectedTotal = count($campaigns) * $donationsPerCampaign;
+        $this->assertEquals($expectedTotal, $totalGenerated);
+
+        // Verify all donations are within the specified date range
+        $allDonations = Donation::query()->getAll();
+        foreach ($allDonations as $donation) {
+            $createdAt = new DateTime($donation->createdAt);
+            $this->assertGreaterThanOrEqual(new DateTime($startDate), $createdAt);
+            $this->assertLessThanOrEqual(new DateTime($endDate), $createdAt);
         }
     }
 
