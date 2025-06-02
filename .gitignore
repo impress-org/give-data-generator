@@ -115,7 +115,6 @@ dist/
 *.tar.gz
 
 # PHPUnit
-phpunit.xml
 .phpunit.result.cache
 /tests/coverage/
 
