@@ -7,6 +7,7 @@ declare const window: {
         nonce: string;
         campaignNonce: string;
         donationFormNonce: string;
+        subscriptionNonce: string;
         cleanupNonce: string;
     };
 } & Window;

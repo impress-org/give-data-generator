@@ -127,7 +127,7 @@ const SubscriptionsTab: React.FC = () => {
         try {
             const params = new URLSearchParams({
                 action: 'generate_test_subscriptions',
-                nonce: dataGenerator.nonce,
+                nonce: dataGenerator.subscriptionNonce,
                 ...Object.fromEntries(Object.entries(formData).map(([key, value]) => [key, String(value)]))
             });
 
