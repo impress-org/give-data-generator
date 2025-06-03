@@ -15,7 +15,7 @@ class View
     /**
      * Default add-on domain
      */
-    const DEFAULT_DOMAIN = 'GiveDataGenerator';
+    const DEFAULT_DOMAIN = 'DataGenerator';
 
     /**
      * @since 1.0.0
