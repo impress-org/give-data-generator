@@ -1,9 +1,10 @@
 === Give Data Generator ===
 Contributors: givewp
 Tags: givewp, donations, testing, development, data
-Requires at least: 4.9
-Tested up to: 6.4
+Requires at least: 6.5
+Tested up to: 6.8
 Requires PHP: 7.4
+Requires Give: 4.0.0
 Stable tag: 1.0.0
 License: GPL-3.0
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -23,12 +24,6 @@ The Give Data Generator is a development tool that allows you to quickly generat
 * Set custom date ranges for when donations should be created
 * Automatically creates realistic test donor data
 * Generates random donation amounts, billing addresses, and other donation details
-
-**Requirements:**
-
-* GiveWP 2.8.0 or higher
-* PHP 7.4 or higher
-* WordPress 4.9 or higher
 
 == Installation ==
 

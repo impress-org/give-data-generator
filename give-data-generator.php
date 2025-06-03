@@ -25,7 +25,7 @@ define('GIVE_DATA_GENERATOR_NAME', 'Give Data Generator');
 
 // Versions
 define('GIVE_DATA_GENERATOR_VERSION', '1.0.0');
-define('GIVE_DATA_GENERATOR_MIN_GIVE_VERSION', '2.8.0');
+define('GIVE_DATA_GENERATOR_MIN_GIVE_VERSION', '4.0.0');
 
 // Add-on paths
 define('GIVE_DATA_GENERATOR_FILE', __FILE__);
