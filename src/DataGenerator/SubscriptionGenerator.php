@@ -381,6 +381,8 @@ class SubscriptionGenerator
 
         $donation = Donation::create($donationData);
 
+        DonationHelpers::addDonationAndDonorBackwardsCompatibility($donation);
+
         // Update subscription with parent payment ID
         give()->subscriptions->updateLegacyParentPaymentId($subscription->id, $donation->id);
     }
@@ -712,10 +714,12 @@ class SubscriptionGenerator
             $renewalDate = $this->calculateRenewalDate($renewalDate, $period, $frequency);
 
             // Create renewal using the Subscription model's createRenewal method
-            $subscription->createRenewal([
+            $donation = $subscription->createRenewal([
                 'createdAt' => $renewalDate,
                 'gatewayTransactionId' => $this->generateRandomTransactionId(),
             ]);
+
+            DonationHelpers::addDonationAndDonorBackwardsCompatibility($donation);
         }
     }
 }
