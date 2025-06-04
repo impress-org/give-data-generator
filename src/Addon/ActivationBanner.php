@@ -31,8 +31,8 @@ class ActivationBanner
             'file' => GIVE_DATA_GENERATOR_FILE,
             'name' => GIVE_DATA_GENERATOR_NAME,
             'version' => GIVE_DATA_GENERATOR_VERSION,
-            'settings_url' => admin_url('edit.php?post_type=give_forms&page=give-settings&tab=give-data-generator'),
-            'documentation_url' => 'https://givewp.com/documentation/add-ons/boilerplate/',
+            'settings_url' => admin_url('edit.php?post_type=give_forms&page=data-generator'),
+            'documentation_url' => 'https://givewp.com/documentation',
             'support_url' => 'https://givewp.com/support/',
             'testing' => false, // Never leave true.
         ];
