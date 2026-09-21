@@ -78,7 +78,8 @@ class GiveDataCommand
         // and is useless in piped output. One line every ten seconds is enough for a 25 minute run.
         $lastLog = $started;
         $clock = static function (float $seconds): string {
-            return sprintf('%d:%02d:%02d', $seconds / 3600, $seconds / 60 % 60, $seconds % 60);
+            $seconds = (int)$seconds;
+            return sprintf('%d:%02d:%02d', intdiv($seconds, 3600), intdiv($seconds, 60) % 60, $seconds % 60);
         };
         $report = static function (int $created) use ($count, $started, &$lastLog, $clock) {
             if ($created < $count && microtime(true) - $lastLog < 10) {
