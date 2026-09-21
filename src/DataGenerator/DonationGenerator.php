@@ -35,6 +35,15 @@ class DonationGenerator
     public $deferDonorStats = false;
 
     /**
+     * Default form per campaign, loaded once instead of two queries per donation.
+     *
+     * @since 1.1.0
+     *
+     * @var array<int, \Give\DonationForms\Models\DonationForm|null>
+     */
+    private $defaultForms = [];
+
+    /**
      * Cached [min, max] donor id for random existing-donor picks. Cleared whenever a donor is created.
      *
      * @since 1.1.0
@@ -364,7 +373,7 @@ class DonationGenerator
         $createdAt = $this->generateRandomDate($dateInfo['start'], $dateInfo['end']);
 
         // Get default form from campaign or use form ID 1 as fallback
-        $defaultForm = $campaign->defaultForm();
+        $defaultForm = $this->defaultForms[$campaign->id] ?? ($this->defaultForms[$campaign->id] = $campaign->defaultForm());
         $formId = $defaultForm ? $defaultForm->id : 1;
         $formTitle = $defaultForm ? $defaultForm->title : 'Test Form';
 

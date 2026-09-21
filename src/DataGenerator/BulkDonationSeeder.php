@@ -9,6 +9,7 @@ use Give\Campaigns\Models\Campaign;
 use Give\Donations\ValueObjects\DonationMetaKeys;
 use Give\Donations\ValueObjects\DonationStatus;
 use Give\Framework\Database\DB;
+use Give_Email_Notifications;
 
 /**
  * Generates donations in bulk through the DonationGenerator, with the per-donation side effects
@@ -224,6 +225,9 @@ class BulkDonationSeeder
     /**
      * Run $callback with outgoing email and the per-donation campaign cache job switched off, using
      * core's own hook-disabling filters. Everything that writes data stays on.
+     *
+     * The offline-donation email listeners are unhooked too: each one builds a legacy Give_Payment
+     * (20 queries) on every insert just to find out the gateway is not "offline".
      */
     private function quietly(callable $callback): void
     {
@@ -231,10 +235,16 @@ class BulkDonationSeeder
             'give_disable_hook-give_insert_payment:' . CacheCampaignData::class . '@__invoke',
             'give_disable_hook-give_update_payment_status:' . CacheCampaignData::class . '@__invoke',
         ];
+        $emails = array_filter(Give_Email_Notifications::get_instance()->get_email_notifications(), static function ($email) {
+            return false !== has_action('give_insert_payment', [$email, 'setup_email_notification']);
+        });
 
         add_filter('pre_wp_mail', '__return_false');
         foreach ($disabled as $filter) {
             add_filter($filter, '__return_true');
+        }
+        foreach ($emails as $email) {
+            remove_action('give_insert_payment', [$email, 'setup_email_notification']);
         }
 
         try {
@@ -243,6 +253,9 @@ class BulkDonationSeeder
             remove_filter('pre_wp_mail', '__return_false');
             foreach ($disabled as $filter) {
                 remove_filter($filter, '__return_true');
+            }
+            foreach ($emails as $email) {
+                add_action('give_insert_payment', [$email, 'setup_email_notification']);
             }
         }
     }
