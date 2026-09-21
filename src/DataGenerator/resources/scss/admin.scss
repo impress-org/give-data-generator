@@ -198,3 +198,29 @@
         }
     }
 }
+
+/* WP-CLI tab: argument fields and the generated command */
+.givewp-cli-args {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.givewp-cli-command {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #1e1e1e;
+    border-radius: 2px;
+    margin: 16px 0;
+
+    code {
+        flex: 1;
+        background: transparent;
+        color: #fff;
+        font-size: 13px;
+        word-break: break-all;
+    }
+}

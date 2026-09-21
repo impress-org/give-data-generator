@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `wp give-data donations <count>` WP-CLI command to add donations at scale (hundreds of thousands to millions), spread across campaigns, in test mode by default
 - `wp give-data reset` to remove every generated donation and donor without touching real data; generated rows are tagged with `_give_data_generator` meta
+- "WP-CLI" admin tab that documents the commands and builds one from form fields, with a copy button
 - PHPUnit test suite
 
 ### Changed

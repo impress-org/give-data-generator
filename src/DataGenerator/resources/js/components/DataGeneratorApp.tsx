@@ -6,6 +6,7 @@ import DonationsTab from './tabs/DonationsTab';
 import DonationFormsTab from './tabs/DonationFormsTab';
 import SubscriptionsTab from './tabs/SubscriptionsTab';
 import CleanupTab from './tabs/CleanupTab';
+import WpCliTab from './tabs/WpCliTab';
 
 interface Tab {
     name: string;
@@ -39,6 +40,11 @@ const DataGeneratorApp: React.FC = () => {
             name: 'cleanup',
             title: __('Cleanup', 'give-data-generator'),
             content: <CleanupTab />
+        },
+        {
+            name: 'wp-cli',
+            title: __('WP-CLI', 'give-data-generator'),
+            content: <WpCliTab />
         }
     ];
 
