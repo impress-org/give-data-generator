@@ -14,3 +14,4 @@ jobs:
         with:
             ref: ${{ github.event.inputs.ref }}
             plugin_slug: give-data-generator
+        secrets: inherit
