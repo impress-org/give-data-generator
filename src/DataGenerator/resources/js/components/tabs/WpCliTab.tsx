@@ -32,6 +32,19 @@ const STATUSES: Option[] = [
     { label: __('Revoked', 'give-data-generator'), value: 'revoked' },
 ];
 
+// Text input that shows 1,000,000 but stores "1000000".
+const NumberField: React.FC<{ label: string; value: string; onChange: (v: string) => void; help?: string; placeholder?: string }> =
+    ({ label, value, onChange, help, placeholder }) => (
+        <TextControl
+            label={label}
+            inputMode="numeric"
+            value={value ? Number(value).toLocaleString() : ''}
+            onChange={(v) => onChange(v.replace(/\D/g, ''))}
+            placeholder={placeholder ? Number(placeholder).toLocaleString() : undefined}
+            help={help}
+        />
+    );
+
 const CommandBlock: React.FC<{ command: string }> = ({ command }) => {
     const [copied, setCopied] = useState(false);
 
@@ -81,30 +94,24 @@ const WpCliTab: React.FC = () => {
                 </CardHeader>
                 <CardBody>
                     <p className="description">
-                        {__('The admin screen caps each request at 1,000 donations. For load testing, use WP-CLI from the site root. Every donation goes through the Donation model, so rows look like production writes. About 2.5 minutes per 100,000. The count is additive: run it twice, get twice as many.', 'give-data-generator')}
+                        {__('The admin screen caps each request at 1,000 donations. For load testing, use WP-CLI from the site root. Every donation goes through the Donation model, so rows look like production writes. The count is additive: run it twice, get twice as many.', 'give-data-generator')}
                     </p>
 
                     <div className="givewp-cli-args">
-                        <TextControl
+                        <NumberField
                             label={__('Donations to add', 'give-data-generator')}
-                            type="number"
-                            min={1}
                             value={count}
                             onChange={setCount}
                             help={minutes > 0 ? `≈ ${minutes} min` : undefined}
                         />
-                        <TextControl
+                        <NumberField
                             label={__('Campaigns', 'give-data-generator')}
-                            type="number"
-                            min={1}
                             value={campaigns}
                             onChange={setCampaigns}
                             help={__('Spread across this many campaigns. Missing ones are created with a default form.', 'give-data-generator')}
                         />
-                        <TextControl
+                        <NumberField
                             label={__('Donors', 'give-data-generator')}
-                            type="number"
-                            min={1}
                             value={donors}
                             onChange={setDonors}
                             placeholder={count ? String(Math.max(1, Math.floor((parseInt(count, 10) || 0) / 10))) : ''}

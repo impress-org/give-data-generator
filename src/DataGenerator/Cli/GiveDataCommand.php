@@ -20,7 +20,7 @@ class GiveDataCommand
      * ## OPTIONS
      *
      * <count>
-     * : How many donations to add. About 2.5 minutes per 100,000.
+     * : How many donations to add. Progress is logged every ten seconds.
      *
      * [--campaigns=<number>]
      * : Campaigns (each with a default form) to spread donations across. Missing ones are created.
@@ -74,20 +74,31 @@ class GiveDataCommand
         WP_CLI::log(sprintf('Ensuring %d campaigns with default forms...', $campaignCount));
         $campaigns = $seeder->ensureCampaigns($campaignCount);
 
-        $progress = Utils\make_progress_bar(sprintf('Creating %s donations', number_format($count)), $count);
-        $ticked = 0;
+        // Plain log lines instead of a progress bar: a redrawn bar wraps and repeats in some shells
+        // and is useless in piped output. One line every ten seconds is enough for a 25 minute run.
+        $lastLog = $started;
+        $report = static function (int $created) use ($count, $started, &$lastLog) {
+            if ($created < $count && microtime(true) - $lastLog < 10) {
+                return;
+            }
+            $lastLog = microtime(true);
+            $elapsed = $lastLog - $started;
+            $left = $created > 0 ? ($count - $created) * $elapsed / $created : 0;
+            WP_CLI::log(sprintf(
+                '%s / %s (%d%%)  %s elapsed, about %s left',
+                number_format($created),
+                number_format($count),
+                $created * 100 / $count,
+                gmdate('H:i:s', (int)$elapsed),
+                gmdate('H:i:s', (int)$left)
+            ));
+        };
 
         try {
-            $seeder->seed($campaigns, $count, $donorTarget, $mode, $status, static function (int $created) use ($progress, &$ticked) {
-                $progress->tick($created - $ticked);
-                $ticked = $created;
-            });
+            $seeder->seed($campaigns, $count, $donorTarget, $mode, $status, $report);
         } catch (Exception $e) {
-            $progress->finish();
             WP_CLI::error($e->getMessage());
         }
-
-        $progress->finish();
 
         WP_CLI::success(sprintf(
             'Site now holds %s donations and %s donors across %d campaigns (%ds).',
