@@ -77,7 +77,10 @@ class GiveDataCommand
         // Plain log lines instead of a progress bar: a redrawn bar wraps and repeats in some shells
         // and is useless in piped output. One line every ten seconds is enough for a 25 minute run.
         $lastLog = $started;
-        $report = static function (int $created) use ($count, $started, &$lastLog) {
+        $clock = static function (float $seconds): string {
+            return sprintf('%d:%02d:%02d', $seconds / 3600, $seconds / 60 % 60, $seconds % 60);
+        };
+        $report = static function (int $created) use ($count, $started, &$lastLog, $clock) {
             if ($created < $count && microtime(true) - $lastLog < 10) {
                 return;
             }
@@ -89,8 +92,8 @@ class GiveDataCommand
                 number_format($created),
                 number_format($count),
                 $created * 100 / $count,
-                gmdate('H:i:s', (int)$elapsed),
-                gmdate('H:i:s', (int)$left)
+                $clock($elapsed),
+                $clock($left)
             ));
         };
 
