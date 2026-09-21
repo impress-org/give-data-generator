@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { __ } from '@wordpress/i18n';
+import { useCopyToClipboard } from '@wordpress/compose';
 import {
     Button,
     Card,
@@ -47,17 +48,16 @@ const NumberField: React.FC<{ label: string; value: string; onChange: (v: string
 
 const CommandBlock: React.FC<{ command: string }> = ({ command }) => {
     const [copied, setCopied] = useState(false);
-
-    const copy = async () => {
-        await navigator.clipboard.writeText(command);
+    // Works on plain http too, where navigator.clipboard is unavailable.
+    const ref = useCopyToClipboard<HTMLButtonElement>(command, () => {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
-    };
+    });
 
     return (
         <div className="givewp-cli-command">
             <code>{command}</code>
-            <Button variant="secondary" size="small" onClick={copy}>
+            <Button ref={ref} variant="secondary" size="small">
                 {copied ? __('Copied', 'give-data-generator') : __('Copy', 'give-data-generator')}
             </Button>
         </div>
