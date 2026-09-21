@@ -497,9 +497,11 @@ class DonationGenerator
      * @since 1.1.0 Pick by random offset instead of ORDER BY RAND()
      * @since 1.0.0
      *
+     * @param bool $retry Refresh the cached id bounds and try once more when the pick misses.
+     *
      * @return Donor|null
      */
-    private function getRandomExistingDonor(): ?Donor
+    private function getRandomExistingDonor(bool $retry = true): ?Donor
     {
         global $wpdb;
 
@@ -522,6 +524,12 @@ class DonationGenerator
 
         if ($donorId) {
             return Donor::find($donorId);
+        }
+
+        // A miss means donors were deleted since the bounds were cached.
+        if ($retry) {
+            $this->donorIdBounds = null;
+            return $this->getRandomExistingDonor(false);
         }
 
         return null;

@@ -78,32 +78,37 @@ class BulkDonationSeeder
         $this->quietly(function () use ($campaigns, $count, $donorTarget, $mode, $status, $start, $end, $onBatch, &$created) {
             $this->donationGenerator->deferDonorStats = true;
 
-            while ($created < $count) {
-                $lastDonationId = $this->maxDonationId();
-                $lastDonorId = $this->maxDonorId();
-                $batch = min(self::BATCH_SIZE, $count - $created);
+            try {
+                while ($created < $count) {
+                    $lastDonationId = $this->maxDonationId();
+                    $lastDonorId = $this->maxDonorId();
+                    $batch = min(self::BATCH_SIZE, $count - $created);
 
-                // New donors only until the donor target is met, then reuse existing ones.
-                $donors = $this->countDonors();
-                $withNewDonors = min($batch, $donors > 0 ? max(0, $donorTarget - $donors) : max(1, $donorTarget));
+                    // New donors only until the donor target is met, then reuse existing ones.
+                    $donors = $this->countDonors();
+                    $withNewDonors = min($batch, $donors > 0 ? max(0, $donorTarget - $donors) : max(1, $donorTarget));
 
-                foreach (array_filter(['create_new' => $withNewDonors, 'use_existing' => $batch - $withNewDonors]) as $donorMethod => $portion) {
-                    foreach ($this->split($portion, count($campaigns)) as $index => $perCampaign) {
-                        if ($perCampaign > 0) {
-                            $this->donationGenerator->generateDonations($campaigns[$index], $perCampaign, 'custom', $mode, $status, $donorMethod, 0, $start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'));
+                    try {
+                        foreach (array_filter(['create_new' => $withNewDonors, 'use_existing' => $batch - $withNewDonors]) as $donorMethod => $portion) {
+                            foreach ($this->split($portion, count($campaigns)) as $index => $perCampaign) {
+                                if ($perCampaign > 0) {
+                                    $this->donationGenerator->generateDonations($campaigns[$index], $perCampaign, 'custom', $mode, $status, $donorMethod, 0, $start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'));
+                                }
+                            }
                         }
+                    } finally {
+                        // Tag even when a portion throws, so reset() can still remove what the batch did create.
+                        $created += $this->tagDonationsAfter($lastDonationId);
+                        $this->tagDonorsAfter($lastDonorId);
+                    }
+
+                    if ($onBatch) {
+                        $onBatch($created);
                     }
                 }
-
-                $created += $this->tagDonationsAfter($lastDonationId);
-                $this->tagDonorsAfter($lastDonorId);
-
-                if ($onBatch) {
-                    $onBatch($created);
-                }
+            } finally {
+                $this->donationGenerator->deferDonorStats = false;
             }
-
-            $this->donationGenerator->deferDonorStats = false;
         });
 
         $this->recount($campaigns);
@@ -144,6 +149,8 @@ class BulkDonationSeeder
             DB::query("DELETE FROM {$wpdb->prefix}give_donors WHERE id IN ({$in})");
         }
 
+        // Existing donors that received generated donations keep the totals unless recounted.
+        $this->recountDonors();
         delete_option('give_campaigns_data');
         delete_option('give_campaigns_subscriptions_data');
 
@@ -170,12 +177,24 @@ class BulkDonationSeeder
 
     /**
      * Rebuild what the deferred per-donation work would have maintained: the legacy donor totals
-     * (one aggregate query instead of one per donation, which scans the meta table on large sites)
      * and the campaign caches (once per campaign instead of one queued job per donation).
      *
      * @param Campaign[] $campaigns
      */
     private function recount(array $campaigns): void
+    {
+        $this->recountDonors();
+
+        foreach ($campaigns as $campaign) {
+            give(CacheCampaignData::class)->handleCache($campaign->id);
+        }
+    }
+
+    /**
+     * Recompute every donor's legacy purchase_count and purchase_value in one aggregate query
+     * instead of one per donation, which scans the meta table on large sites.
+     */
+    private function recountDonors(): void
     {
         global $wpdb;
 
@@ -200,10 +219,6 @@ class BulkDonationSeeder
             DonationStatus::COMPLETE,
             DonationStatus::RENEWAL
         ));
-
-        foreach ($campaigns as $campaign) {
-            give(CacheCampaignData::class)->handleCache($campaign->id);
-        }
     }
 
     /**

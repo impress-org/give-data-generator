@@ -81,9 +81,12 @@ class TestBulkDonationSeeder extends TestCase
         $campaigns = $this->seeder->ensureCampaigns(1);
         $real = Donation::factory()->create(['campaignId' => $campaigns[0]->id]);
         $realDonorId = $real->donorId;
+        $realDonorCount = (int)DB::table('give_donors')->where('id', $realDonorId)->get()->purchase_count;
 
-        $this->seeder->seed($campaigns, 12, 3, 'test', 'complete');
+        // donorTarget 1 forces every generated donation onto the existing real donor.
+        $this->seeder->seed($campaigns, 12, 1, 'test', 'complete');
         $this->assertSame(13, $this->seeder->countDonations());
+        $this->assertSame($realDonorCount + 12, (int)DB::table('give_donors')->where('id', $realDonorId)->get()->purchase_count);
 
         $result = $this->seeder->reset();
 
@@ -92,6 +95,7 @@ class TestBulkDonationSeeder extends TestCase
         $this->assertSame(0, $this->seeder->countGenerated());
         $this->assertNotNull(Donation::find($real->id));
         $this->assertNotNull(DB::table('give_donors')->where('id', $realDonorId)->get(), 'real donor kept');
+        $this->assertSame($realDonorCount, (int)DB::table('give_donors')->where('id', $realDonorId)->get()->purchase_count, 'retained donor totals recounted');
         $this->assertSame(1, (int)DB::table('give_revenue')->count());
     }
 }
