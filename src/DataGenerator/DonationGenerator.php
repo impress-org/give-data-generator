@@ -27,6 +27,31 @@ use GiveFeeRecovery\FormExtension\Hooks\UpdateDonationWithFeeAmountRecovered;
 class DonationGenerator
 {
     /**
+     * When true, skip the per-donation donor total recount. Bulk callers recount once at the end.
+     *
+     * @since 1.1.0
+     * @var bool
+     */
+    public $deferDonorStats = false;
+
+    /**
+     * Default form per campaign, loaded once instead of two queries per donation.
+     *
+     * @since 1.1.0
+     *
+     * @var array<int, \Give\DonationForms\Models\DonationForm|null>
+     */
+    private $defaultForms = [];
+
+    /**
+     * Cached [min, max] donor id for random existing-donor picks. Cleared whenever a donor is created.
+     *
+     * @since 1.1.0
+     * @var int[]|null
+     */
+    private $donorIdBounds = null;
+
+    /**
      * List of sample first names for generating fake donors.
      *
      * @since 1.0.0
@@ -348,7 +373,10 @@ class DonationGenerator
         $createdAt = $this->generateRandomDate($dateInfo['start'], $dateInfo['end']);
 
         // Get default form from campaign or use form ID 1 as fallback
-        $defaultForm = $campaign->defaultForm();
+        if (!array_key_exists($campaign->id, $this->defaultForms)) {
+            $this->defaultForms[$campaign->id] = $campaign->defaultForm();
+        }
+        $defaultForm = $this->defaultForms[$campaign->id];
         $formId = $defaultForm ? $defaultForm->id : 1;
         $formTitle = $defaultForm ? $defaultForm->title : 'Test Form';
 
@@ -396,10 +424,12 @@ class DonationGenerator
         try {
             $donation = Donation::create($donationData);
 
-            DonationHelpers::addDonationAndDonorBackwardsCompatibility($donation);
+            DonationHelpers::addFeeRecoveryBackwardsCompatibility($donation);
+            if (!$this->deferDonorStats) {
+                DonationHelpers::updateDonorLegacyColumns($donation);
+            }
 
             // Log success for debugging
-            error_log('Data Generator: Successfully created donation ID ' . $donation->id . ' for campaign ' . $campaign->id);
 
         } catch (Exception $e) {
             error_log('Data Generator: Failed to create donation. Error: ' . $e->getMessage());
@@ -462,6 +492,8 @@ class DonationGenerator
         }
 
         // Create new donor
+        $this->donorIdBounds = null;
+
         return Donor::create([
             'firstName' => $firstName,
             'lastName' => $lastName,
@@ -474,24 +506,42 @@ class DonationGenerator
     /**
      * Get a random existing donor from the database.
      *
+     * @since 1.1.0 Pick by random offset instead of ORDER BY RAND()
      * @since 1.0.0
+     *
+     * @param bool $retry Refresh the cached id bounds and try once more when the pick misses.
      *
      * @return Donor|null
      */
-    private function getRandomExistingDonor(): ?Donor
+    private function getRandomExistingDonor(bool $retry = true): ?Donor
     {
         global $wpdb;
 
         // Get a random donor ID from the database
-        $donorId = $wpdb->get_var("
-            SELECT id
-            FROM {$wpdb->prefix}give_donors
-            ORDER BY RAND()
-            LIMIT 1
-        ");
+        // A random offset into the id range instead of ORDER BY RAND(), which sorts the whole table.
+        // The bounds are computed in PHP: a RAND() subquery in the WHERE clause is re-evaluated per row.
+        if ($this->donorIdBounds === null) {
+            $bounds = $wpdb->get_row("SELECT MIN(id) AS min_id, MAX(id) AS max_id FROM {$wpdb->prefix}give_donors");
+            $this->donorIdBounds = $bounds && $bounds->max_id ? [(int)$bounds->min_id, (int)$bounds->max_id] : [0, 0];
+        }
+
+        if ($this->donorIdBounds[1] < 1) {
+            return null;
+        }
+
+        $donorId = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$wpdb->prefix}give_donors WHERE id >= %d ORDER BY id LIMIT 1",
+            mt_rand($this->donorIdBounds[0], $this->donorIdBounds[1])
+        ));
 
         if ($donorId) {
             return Donor::find($donorId);
+        }
+
+        // A miss means donors were deleted since the bounds were cached.
+        if ($retry) {
+            $this->donorIdBounds = null;
+            return $this->getRandomExistingDonor(false);
         }
 
         return null;

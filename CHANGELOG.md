@@ -5,6 +5,26 @@ All notable changes to the GiveWP Test Donation Generator will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `wp give-data donations <count>` WP-CLI command to add donations at scale (hundreds of thousands to millions), spread across campaigns, in test mode by default
+- `wp give-data reset` to remove every generated donation and donor without touching real data; generated rows are tagged with `_give_data_generator` meta
+- "WP-CLI" admin tab that documents the commands and builds one from form fields, with a copy button
+- PHPUnit test suite
+
+### Changed
+- Bulk generation keeps data-writing listeners (revenue, donor comments, fee meta) and only suspends email and the per-donation campaign cache job, then rebuilds donor totals and campaign caches once at the end
+- Picking an existing donor no longer uses `ORDER BY RAND()`, which scanned the whole donors table on every donation
+- Removed the per-donation "Successfully created donation" debug log line, which wrote one line to debug.log for every generated donation
+
+### Planned
+- Additional donor data fields (occupation, age ranges)
+- International address formats
+- More payment gateway options
+- Export functionality for generated data
+- Integration with other GiveWP addons
+
 ## [1.0.0] - 2024-12-12
 
 ### Added
@@ -41,24 +61,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Follows WordPress coding standards
 - Comprehensive input validation and sanitization
 - Detailed error logging for debugging
-
-## [Unreleased]
-
-### Added
-- Comprehensive unit test suite (41 tests)
-  - DonationGenerator tests (15 tests)
-  - AdminSettings tests (10 tests)
-  - ServiceProvider tests (8 tests)
-  - Integration tests (8 tests)
-- Test runner script (`run-tests.sh`)
-- Testing documentation (`TESTING.md`)
-- PHPUnit configuration
-- Performance benchmarks for donation generation
-
-### Planned
-- Additional donor data fields (occupation, age ranges)
-- International address formats
-- More payment gateway options
-- Bulk deletion of test donations
-- Export functionality for generated data
-- Integration with other GiveWP addons

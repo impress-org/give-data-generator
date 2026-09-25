@@ -17,6 +17,22 @@ A WordPress plugin that generates test data for GiveWP including donations, dono
 - Generates random donation amounts, billing addresses, and other donation details
 - **Clean up tools** to remove test data when needed
 
+## Command line (large datasets)
+
+The admin screen caps each request at 1,000 donations. For load and performance testing use WP-CLI:
+
+```
+wp give-data donations 1000000 --campaigns=50 --donors=100000
+wp give-data donations 5000 --mode=live --status=complete
+wp give-data reset --yes
+```
+
+- Every donation goes through the Donation model, so rows look exactly like production writes. About 2.5 minutes per 100,000.
+- The count is additive: run it twice, get twice as many.
+- Donations are created in test mode unless you pass `--mode=live`.
+- Email and the per-donation campaign cache job (one Action Scheduler action per donation) are suspended while generating. Everything that writes data still runs. Donor totals and campaign caches are rebuilt once at the end.
+- `reset` deletes only rows the command tagged.
+
 ## Installation
 
 1. Download or clone this repository to your WordPress plugins directory

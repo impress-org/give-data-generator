@@ -30,6 +30,7 @@ class ServiceProvider implements ServiceProviderInterface
         give()->singleton(SubscriptionGenerator::class);
         give()->singleton(CleanUpManager::class);
         give()->singleton(AdminSettings::class);
+        give()->singleton(BulkDonationSeeder::class);
     }
 
     /**
@@ -37,6 +38,10 @@ class ServiceProvider implements ServiceProviderInterface
      */
     public function boot()
     {
+        if (defined('WP_CLI') && WP_CLI) {
+            \WP_CLI::add_command('give-data', Cli\GiveDataCommand::class);
+        }
+
         $this->registerAdminSettings();
         $this->registerAjaxHandlers();
     }
