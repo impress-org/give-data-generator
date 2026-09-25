@@ -24,7 +24,7 @@ defined('ABSPATH') or exit;
 define('GIVE_DATA_GENERATOR_NAME', 'Give Data Generator');
 
 // Versions
-define('GIVE_DATA_GENERATOR_VERSION', '1.0.0');
+define('GIVE_DATA_GENERATOR_VERSION', '1.1.0');
 define('GIVE_DATA_GENERATOR_MIN_GIVE_VERSION', '4.0.0');
 
 // Add-on paths

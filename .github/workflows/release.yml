@@ -1,0 +1,15 @@
+name: Attach Release Zip
+
+# Builds a production zip from the release tag and attaches it to the GitHub release.
+# Fires for both releases and pre-releases.
+
+on:
+    release:
+        types: [ published ]
+
+jobs:
+    build:
+        uses: impress-org/givewp-github-actions/.github/workflows/pre-release.yml@master
+        with:
+            plugin_slug: give-data-generator
+            zip_name: give-data-generator.${{ github.event.release.tag_name }}

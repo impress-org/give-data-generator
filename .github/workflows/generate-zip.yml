@@ -7,11 +7,23 @@ on:
                 description: 'Git Commit Ref (branch, tag, or hash)'
                 required: true
                 type: string
+            # Must stay a choice of true/false rather than a boolean. The shared workflow compares this
+            # against the string 'true' and only rewrites the version to <version>-dev-<timestamp>-<hash>
+            # when it is 'false'.
+            production:
+                description: 'Is this a production build? (keeps the version number as-is)'
+                default: 'false'
+                required: false
+                type: choice
+                options:
+                    - 'true'
+                    - 'false'
 
 jobs:
     build:
         uses: impress-org/givewp-github-actions/.github/workflows/generate-zip.yml@master
         with:
-            ref: ${{ github.event.inputs.ref }}
+            ref: ${{ inputs.ref }}
+            production: ${{ inputs.production }}
             plugin_slug: give-data-generator
         secrets: inherit
