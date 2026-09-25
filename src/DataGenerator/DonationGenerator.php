@@ -373,7 +373,10 @@ class DonationGenerator
         $createdAt = $this->generateRandomDate($dateInfo['start'], $dateInfo['end']);
 
         // Get default form from campaign or use form ID 1 as fallback
-        $defaultForm = $this->defaultForms[$campaign->id] ?? ($this->defaultForms[$campaign->id] = $campaign->defaultForm());
+        if (!array_key_exists($campaign->id, $this->defaultForms)) {
+            $this->defaultForms[$campaign->id] = $campaign->defaultForm();
+        }
+        $defaultForm = $this->defaultForms[$campaign->id];
         $formId = $defaultForm ? $defaultForm->id : 1;
         $formTitle = $defaultForm ? $defaultForm->title : 'Test Form';
 
