@@ -1,11 +1,11 @@
 === Give Data Generator ===
 Contributors: givewp
 Tags: givewp, donations, testing, development, data
-Requires at least: 6.5
-Tested up to: 6.8
+Requires at least: 6.9
+Tested up to: 7.1
 Requires PHP: 7.4
 Requires Give: 4.0.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPL-3.0
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,6 +55,8 @@ The plugin generates realistic test data including donor names, email addresses,
 Yes, the generated donations can be deleted through the standard GiveWP donations management interface.
 
 == Changelog ==
+= 1.1.0 =
+* Added WP CLI commands
 
 = 1.0.0 =
 * Initial release

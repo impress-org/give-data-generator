@@ -10,8 +10,8 @@ use GiveDataGenerator\DataGenerator\ServiceProvider as DataGeneratorServiceProvi
  * Plugin Name:         Give Data Generator
  * Plugin URI:          https://givewp.com/addons/data-generator/
  * Description:         Generate test data for GiveWP including donations, donors, and more
- * Version:             1.0.0
- * Requires at least:   4.9
+ * Version:             1.1.0
+ * Requires at least:   6.9
  * Requires PHP:        7.4
  * Author:              GiveWP
  * Author URI:          https://givewp.com/
