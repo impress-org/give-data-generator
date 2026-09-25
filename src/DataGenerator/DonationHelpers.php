@@ -8,13 +8,23 @@ use Give\Donations\ValueObjects\DonationMetaKeys;
 
 class DonationHelpers
 {
-    /**
+        /**
+     * @since 1.1.0 Split into updateDonorLegacyColumns() and addFeeRecoveryBackwardsCompatibility()
      * @since 1.0.0
-     *
-     * @param Donation $donation
-     * @return void
      */
     public static function addDonationAndDonorBackwardsCompatibility(Donation $donation)
+    {
+        self::updateDonorLegacyColumns($donation);
+        self::addFeeRecoveryBackwardsCompatibility($donation);
+    }
+
+    /**
+     * Keep the legacy purchase_value and purchase_count columns in step, as completing a donation
+     * through a gateway would.
+     *
+     * @since 1.1.0
+     */
+    public static function updateDonorLegacyColumns(Donation $donation)
     {
         $donor = $donation->donor;
 
@@ -22,7 +32,15 @@ class DonationHelpers
             'purchase_value' => static::getDonorTotalAmountDonated($donor->id),
             'purchase_count' => $donor->totalDonations()
         ]);
+    }
 
+    /**
+     * Write the fee meta the Fee Recovery add-on reads.
+     *
+     * @since 1.1.0
+     */
+    public static function addFeeRecoveryBackwardsCompatibility(Donation $donation)
+    {
         if ($donation->feeAmountRecovered !== null) {
             give()->payment_meta->update_meta(
                 $donation->id,
@@ -35,7 +53,7 @@ class DonationHelpers
         }
     }
 
-    /**
+/**
      * Calculate total amount donated by a donor (intended amount after subtracting fees)
      *
      * @since 1.0.0
