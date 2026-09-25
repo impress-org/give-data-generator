@@ -13,3 +13,4 @@ jobs:
         with:
             plugin_slug: give-data-generator
             zip_name: give-data-generator.${{ github.event.release.tag_name }}
+        secrets: inherit
