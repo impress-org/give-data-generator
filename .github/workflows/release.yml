@@ -9,6 +9,9 @@ on:
 
 jobs:
     build:
+        # GITHUB_TOKEN needs write access to attach the asset; repo default is read-only.
+        permissions:
+            contents: write
         uses: impress-org/givewp-github-actions/.github/workflows/pre-release.yml@master
         with:
             plugin_slug: give-data-generator
