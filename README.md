@@ -8,6 +8,7 @@ A WordPress plugin that generates test data for GiveWP including donations, dono
 - **Generate test donations** using the GiveWP Donation Model
 - **Generate test donation forms** for specific campaigns with various designs and settings
 - **Generate test subscriptions** with different billing periods and statuses
+- **Generate test pages** with one published page for every GiveWP block and shortcode
 - Generate test donor data with realistic information
 - Choose between creating new donors, using existing donors, or a mix of both
 - Select specific campaigns for donation generation
@@ -91,6 +92,9 @@ Generate test subscriptions with:
 - Custom frequency and installment settings
 - Renewal payment generation
 
+### Pages Tab
+Pick a campaign and create one published page for every GiveWP block and shortcode (campaign blocks, v3 and legacy form blocks, donor wall, donor dashboard, multi-form goal, and the rest). Campaign blocks use the selected campaign, and form blocks use its default form. Each block and shortcode has a checkbox, all checked by default. Switch "Generate For" to a donation form to test a standalone form; that skips the campaign blocks and shortcodes. "Page Layout" creates a page per block or shortcode, one page for blocks and one for shortcodes, or everything on one page; grouped pages add a heading above each one.
+
 ### Clean Up Tab
 Remove test data with:
 - Delete all test mode donations
@@ -117,6 +121,7 @@ This add-on follows the GiveWP domain-driven architecture with:
 - `CampaignGenerator` - Logic for creating test campaigns
 - `DonationFormGenerator` - Logic for creating test donation forms for campaigns
 - `SubscriptionGenerator` - Logic for creating test subscriptions
+- `PageGenerator` - Creates a page for every GiveWP block and shortcode
 - `CleanUpManager` - Handles removal of test data
 - `ServiceProvider` - Registers services and hooks with GiveWP
 

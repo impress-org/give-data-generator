@@ -87,6 +87,12 @@ class AdminSettings
             'donationFormNonce' => wp_create_nonce('donation_form_generator_nonce'),
             'subscriptionNonce' => wp_create_nonce('subscription_generator_nonce'),
             'cleanupNonce' => wp_create_nonce('cleanup_nonce'),
+            'pageNonce' => wp_create_nonce('page_generator_nonce'),
+            'pageTitles' => array_keys(give(PageGenerator::class)->getPageContents(0, 0)),
+            'formPageTitles' => array_keys(give(PageGenerator::class)->getPageContents(0)),
+            'forms' => array_map(static function (\WP_Post $form) {
+                return ['id' => $form->ID, 'title' => $form->post_title];
+            }, get_posts(['post_type' => 'give_forms', 'post_status' => 'publish', 'numberposts' => 100])),
             'donors' => $donors,
             'strings' => [
                 'errorMessage' => __('An error occurred while generating data.', 'give-data-generator'),

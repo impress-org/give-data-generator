@@ -29,6 +29,7 @@ class ServiceProvider implements ServiceProviderInterface
         give()->singleton(DonationFormGenerator::class);
         give()->singleton(SubscriptionGenerator::class);
         give()->singleton(CleanUpManager::class);
+        give()->singleton(PageGenerator::class);
         give()->singleton(AdminSettings::class);
         give()->singleton(BulkDonationSeeder::class);
     }
@@ -71,6 +72,7 @@ class ServiceProvider implements ServiceProviderInterface
         Hooks::addAction('wp_ajax_generate_test_campaigns', CampaignGenerator::class, 'handleAjaxRequest');
         Hooks::addAction('wp_ajax_generate_test_donation_forms', DonationFormGenerator::class, 'handleAjaxRequest');
         Hooks::addAction('wp_ajax_generate_test_subscriptions', SubscriptionGenerator::class, 'handleAjaxRequest');
+        Hooks::addAction('wp_ajax_generate_test_pages', PageGenerator::class, 'handleAjaxRequest');
         Hooks::addAction('wp_ajax_cleanup_test_data', CleanUpManager::class, 'handleAjaxRequest');
     }
 }
