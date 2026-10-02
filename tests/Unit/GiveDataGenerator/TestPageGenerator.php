@@ -78,6 +78,16 @@ class TestPageGenerator extends TestCase
     /**
      * @unreleased
      */
+    public function testGeneratePagesRejectsUnknownLayout()
+    {
+        $this->expectException(\Exception::class);
+
+        (new PageGenerator())->generatePages(['Shortcode: [give_form]'], 1, 1, '1');
+    }
+
+    /**
+     * @unreleased
+     */
     public function testStandaloneFormSkipsCampaignPages()
     {
         $contents = (new PageGenerator())->getPageContents(7);

@@ -73,6 +73,10 @@ class PageGenerator
      */
     public function generatePages(array $titles, int $formId, ?int $campaignId = null, string $layout = 'individual'): array
     {
+        if (!in_array($layout, ['individual', 'type', 'single'], true)) {
+            throw new Exception(sprintf('Unknown layout "%s". Use individual, type or single.', $layout));
+        }
+
         $pages = [];
         $contents = $this->getPageContents($formId, $campaignId);
 
