@@ -34,6 +34,18 @@ wp give-data reset --yes
 - Email and the per-donation campaign cache job (one Action Scheduler action per donation) are suspended while generating. Everything that writes data still runs. Donor totals and campaign caches are rebuilt once at the end.
 - `reset` deletes only rows the command tagged.
 
+Block and shortcode pages, same as the Pages tab:
+
+```
+wp give-data pages --campaign=12
+wp give-data pages --form=34 --layout=single
+wp give-data pages --campaign=12 --only=givewp/campaign-grid,give_form
+```
+
+- Pass `--campaign` or `--form` (a standalone form skips the campaign blocks and shortcodes).
+- `--layout` is `individual` (default), `type` or `single`.
+- `--only` takes block names or shortcode tags; an unknown name lists the available ones.
+
 ## Installation
 
 1. Download or clone this repository to your WordPress plugins directory

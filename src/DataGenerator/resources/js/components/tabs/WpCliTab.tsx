@@ -156,6 +156,20 @@ const WpCliTab: React.FC = () => {
                     <CommandBlock command={resetCommand} />
                 </CardBody>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <h2>{__('Generate block and shortcode pages', 'give-data-generator')}</h2>
+                </CardHeader>
+                <CardBody>
+                    <p className="description">
+                        {__('Same as the Pages tab. Pass a campaign ID, or a donation form ID for a standalone form. --layout takes individual, type or single, and --only takes block names or shortcode tags.', 'give-data-generator')}
+                    </p>
+                    <CommandBlock command="wp give-data pages --campaign=<id>" />
+                    <CommandBlock command="wp give-data pages --form=<id> --layout=single" />
+                    <CommandBlock command="wp give-data pages --campaign=<id> --only=givewp/campaign-grid,give_form" />
+                </CardBody>
+            </Card>
         </>
     );
 };

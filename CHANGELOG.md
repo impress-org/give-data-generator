@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `wp give-data reset` to remove every generated donation and donor without touching real data; generated rows are tagged with `_give_data_generator` meta
 - "WP-CLI" admin tab that documents the commands and builds one from form fields, with a copy button
 - PHPUnit test suite
-- "Pages" admin tab that creates test pages for any GiveWP block and shortcode, for a campaign or a standalone donation form, as separate pages or grouped on one
+- "Pages" admin tab that creates test pages for any GiveWP block and shortcode, for a campaign or a standalone donation form, as separate pages or grouped on one, also available as `wp give-data pages`
 
 ### Changed
 - Bulk generation keeps data-writing listeners (revenue, donor comments, fee meta) and only suspends email and the per-donation campaign cache job, then rebuilds donor totals and campaign caches once at the end
