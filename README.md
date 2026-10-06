@@ -46,6 +46,15 @@ wp give-data pages --campaign=12 --only=givewp/campaign-grid,give_form
 - `--layout` is `individual` (default), `type` or `single`.
 - `--only` takes block names or shortcode tags; an unknown name lists the available ones.
 
+Benchmark the site it produced, and compare runs:
+
+```
+wp give-data bench 1m --donations=1000000 --save
+php bin/compare.php benchmarks/results/before.json benchmarks/results/after.json
+```
+
+See [benchmarks/README.md](benchmarks/README.md) for what is measured and how results are kept.
+
 ## Installation
 
 1. Download or clone this repository to your WordPress plugins directory

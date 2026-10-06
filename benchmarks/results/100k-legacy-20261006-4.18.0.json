@@ -1,0 +1,210 @@
+{
+    "label": "100k",
+    "date": "2026-10-06T20:08:34+00:00",
+    "plugin_version": "4.18.0",
+    "generator_version": "1.1.0",
+    "storage": "legacy",
+    "donations": 100000,
+    "campaigns": 50,
+    "db_version": "12.3.3-MariaDB-ubu2404",
+    "innodb_buffer_pool_mb": 128,
+    "php_version": "8.3.35",
+    "peak_memory_is_per_run": true,
+    "plugins": {
+        "give-data-generator-cli": "1.1.0",
+        "soft-5014-small": "4.18.0"
+    },
+    "workloads": {
+        "donations_screen_page1": {
+            "ms": 1109.9,
+            "runs_ms": [
+                1076.5,
+                1109.9,
+                1112.2
+            ],
+            "peak_mb": 81.5,
+            "queries": 33
+        },
+        "donations_screen_lastpage": {
+            "ms": 1119.4,
+            "runs_ms": [
+                1067.9,
+                1119.4,
+                1134.5
+            ],
+            "peak_mb": 81.4,
+            "queries": 13
+        },
+        "donations_screen_search_email": {
+            "ms": 5.8,
+            "runs_ms": [
+                5.6,
+                5.8,
+                6
+            ],
+            "peak_mb": 81.6,
+            "queries": 14
+        },
+        "donations_screen_stats": {
+            "ms": 1465.3,
+            "runs_ms": [
+                1461.7,
+                1465.3,
+                1501.3
+            ],
+            "peak_mb": 81.6,
+            "queries": 1
+        },
+        "donors_screen_page1": {
+            "ms": 20.2,
+            "runs_ms": [
+                20,
+                20.2,
+                23.2
+            ],
+            "peak_mb": 82.1,
+            "queries": 94
+        },
+        "donors_screen_search_email": {
+            "ms": 7.5,
+            "runs_ms": [
+                7.5,
+                7.5,
+                7.6
+            ],
+            "peak_mb": 80.6,
+            "queries": 7
+        },
+        "donations_api_v3_page1": {
+            "ms": 1.3,
+            "runs_ms": [
+                1.2,
+                1.3,
+                1.4
+            ],
+            "peak_mb": 80.8,
+            "queries": 1
+        },
+        "donors_api_v3_page1": {
+            "ms": 0.6,
+            "runs_ms": [
+                0.6,
+                0.6,
+                0.6
+            ],
+            "peak_mb": 80.9,
+            "queries": 1
+        },
+        "donor_api_v3_statistics": {
+            "ms": 3,
+            "runs_ms": [
+                3,
+                3,
+                3.1
+            ],
+            "peak_mb": 81,
+            "queries": 14
+        },
+        "campaigns_data_all_uncached": {
+            "ms": 5228.4,
+            "runs_ms": [
+                5125.6,
+                5228.4,
+                5291.9
+            ],
+            "peak_mb": 81,
+            "queries": 6
+        },
+        "campaign_grid_12_uncached": {
+            "ms": 440.4,
+            "runs_ms": [
+                405,
+                440.4,
+                441.6
+            ],
+            "peak_mb": 81.4,
+            "queries": 36
+        },
+        "campaign_sum_intended": {
+            "ms": 9.1,
+            "runs_ms": [
+                9,
+                9.1,
+                9.4
+            ],
+            "peak_mb": 81.4,
+            "queries": 1
+        },
+        "campaign_by_day_1y": {
+            "ms": 1443.1,
+            "runs_ms": [
+                1406.8,
+                1443.1,
+                1515.8
+            ],
+            "peak_mb": 81.6,
+            "queries": 1
+        },
+        "forms_list_20_uncached": {
+            "ms": 1031,
+            "runs_ms": [
+                972.4,
+                1031,
+                1067.6
+            ],
+            "peak_mb": 83.6,
+            "queries": 241
+        },
+        "reports_income_1y_uncached": {
+            "ms": 313653.7,
+            "runs_ms": [
+                298543.2,
+                313653.7,
+                319897.9
+            ],
+            "peak_mb": 511.4,
+            "queries": 406803
+        },
+        "legacy_stats_earnings_1y_uncached": {
+            "ms": 3850.9,
+            "runs_ms": [
+                3843.4,
+                3850.9,
+                3863.1
+            ],
+            "peak_mb": 80.9,
+            "queries": 4
+        },
+        "donor_statistics_query": {
+            "ms": 1.5,
+            "runs_ms": [
+                1.5,
+                1.5,
+                1.6
+            ],
+            "peak_mb": 80.8,
+            "queries": 4
+        },
+        "donation_create": {
+            "ms": 11,
+            "runs_ms": [
+                10.7,
+                11,
+                11.7
+            ],
+            "peak_mb": 81.8,
+            "queries": 52,
+            "meta_rows": 25
+        },
+        "donation_update_status": {
+            "ms": 4,
+            "runs_ms": [
+                3.8,
+                4,
+                5.1
+            ],
+            "peak_mb": 82.2,
+            "queries": 18
+        }
+    }
+}

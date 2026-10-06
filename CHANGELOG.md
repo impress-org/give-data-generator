@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `wp give-data bench <label>` times GiveWP's everyday workloads (admin list endpoints, v3 REST API, campaign and form totals, reports, a donation save) on the current site, tops it up to `--donations=N` first, and saves a JSON result with the GiveWP version, database version and buffer pool size; `bin/compare.php` prints the change between two saved runs
 - `wp give-data donations <count>` WP-CLI command to add donations at scale (hundreds of thousands to millions), spread across campaigns, in test mode by default
 - `wp give-data reset` to remove every generated donation and donor without touching real data; generated rows are tagged with `_give_data_generator` meta
 - "WP-CLI" admin tab that documents the commands and builds one from form fields, with a copy button

@@ -4,14 +4,17 @@ namespace GiveDataGenerator\DataGenerator\Cli;
 
 use Exception;
 use Give\Campaigns\Models\Campaign;
+use GiveDataGenerator\DataGenerator\Benchmark\Benchmark;
+use GiveDataGenerator\DataGenerator\Benchmark\Report;
 use GiveDataGenerator\DataGenerator\BulkDonationSeeder;
 use GiveDataGenerator\DataGenerator\PageGenerator;
 use WP_CLI;
 use WP_CLI\Utils;
 
 /**
- * Generate GiveWP test data at scale from the command line.
+ * Generate GiveWP test data at scale from the command line, and benchmark the site it produced.
  *
+ * @since 1.2.0 Add the bench subcommand.
  * @since 1.1.0
  */
 class GiveDataCommand
@@ -69,6 +72,111 @@ class GiveDataCommand
         $mode = Utils\get_flag_value($assocArgs, 'mode', 'test');
         $status = Utils\get_flag_value($assocArgs, 'status', 'random');
 
+        $started = microtime(true);
+        $seeder = $this->seed($count, $campaignCount, $donorTarget, $mode, $status);
+
+        WP_CLI::success(sprintf(
+            'Site now holds %s donations and %s donors across %d campaigns (%ds).',
+            number_format($seeder->countDonations()),
+            number_format($seeder->countDonors()),
+            $campaignCount,
+            round(microtime(true) - $started)
+        ));
+    }
+
+    /**
+     * Time GiveWP's everyday workloads on this site and save the numbers for comparison.
+     *
+     * Every workload runs through the real code path an admin screen, REST client or template
+     * uses: the Donations and Donors list endpoints, the v3 REST API, campaign and form totals
+     * with caches cleared, reports, and a donation save. Each runs once to warm up and then three
+     * times; the median, peak PHP memory and query count are recorded along with the date, GiveWP
+     * version, storage in use, database version and InnoDB buffer pool size.
+     *
+     * ## OPTIONS
+     *
+     * <label>
+     * : A name for this run, such as the dataset size: 100k, 400k, 1m.
+     *
+     * [--donations=<count>]
+     * : Top the site up to this many donations across 50 campaigns before measuring.
+     *
+     * [--storage=<storage>]
+     * : Donation storage the site is using, recorded in the result.
+     * ---
+     * default: legacy
+     * options:
+     *   - legacy
+     *   - new
+     * ---
+     *
+     * [--save[=<dir>]]
+     * : Write the result as JSON into this directory, named <label>-<storage>-<date>-<version>.json.
+     * Without a value it goes into the plugin's own benchmarks/results directory.
+     *
+     * [--format=<format>]
+     * : What to print.
+     * ---
+     * default: table
+     * options:
+     *   - table
+     *   - json
+     * ---
+     *
+     * ## EXAMPLES
+     *
+     *     wp give-data bench 1m --donations=1000000 --save
+     *     wp give-data bench after-fix --format=json > after.json
+     *
+     * @since 1.2.0
+     *
+     * @subcommand bench
+     */
+    public function bench(array $args, array $assocArgs): void
+    {
+        $label = $args[0];
+        $target = (int)Utils\get_flag_value($assocArgs, 'donations', 0);
+        $storage = Utils\get_flag_value($assocArgs, 'storage', 'legacy');
+        $save = Utils\get_flag_value($assocArgs, 'save', false);
+        $format = Utils\get_flag_value($assocArgs, 'format', 'table');
+
+        if ($target > 0) {
+            $current = give(BulkDonationSeeder::class)->countDonations();
+            if ($current < $target) {
+                WP_CLI::log(sprintf('Site has %s donations; adding %s...', number_format($current), number_format($target - $current)));
+                $this->seed($target - $current, 50, intdiv($target, 10), 'test', 'random');
+            }
+        }
+
+        try {
+            $benchmark = new Benchmark(static function (string $name) {
+                WP_CLI::log('  ' . $name);
+            });
+            $result = $benchmark->run($label, $storage);
+        } catch (Exception $e) {
+            WP_CLI::error($e->getMessage());
+        }
+
+        if ($save !== false) {
+            $dir = $save === true ? GIVE_DATA_GENERATOR_DIR . 'benchmarks/results' : $save;
+            if (!wp_mkdir_p($dir)) {
+                WP_CLI::error("Could not create $dir.");
+            }
+            $file = sprintf('%s/%s-%s-%s-%s.json', rtrim($dir, '/'), $label, $storage, gmdate('Ymd'), GIVE_VERSION);
+            file_put_contents($file, json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+            WP_CLI::log("Saved $file");
+        }
+
+        WP_CLI::line($format === 'json' ? json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : Report::table($result));
+    }
+
+    /**
+     * Ensures the campaigns exist, then adds donations, logging progress as it goes.
+     *
+     * @since 1.2.0
+     */
+    private function seed(int $count, int $campaignCount, int $donorTarget, string $mode, string $status): BulkDonationSeeder
+    {
         /** @var BulkDonationSeeder $seeder */
         $seeder = give(BulkDonationSeeder::class);
         $started = microtime(true);
@@ -106,13 +214,7 @@ class GiveDataCommand
             WP_CLI::error($e->getMessage());
         }
 
-        WP_CLI::success(sprintf(
-            'Site now holds %s donations and %s donors across %d campaigns (%ds).',
-            number_format($seeder->countDonations()),
-            number_format($seeder->countDonors()),
-            count($campaigns),
-            round(microtime(true) - $started)
-        ));
+        return $seeder;
     }
 
     /**
