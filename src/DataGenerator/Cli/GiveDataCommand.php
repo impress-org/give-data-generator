@@ -3,7 +3,9 @@
 namespace GiveDataGenerator\DataGenerator\Cli;
 
 use Exception;
+use Give\Campaigns\Models\Campaign;
 use GiveDataGenerator\DataGenerator\BulkDonationSeeder;
+use GiveDataGenerator\DataGenerator\PageGenerator;
 use WP_CLI;
 use WP_CLI\Utils;
 
@@ -135,5 +137,91 @@ class GiveDataCommand
         $result = $seeder->reset();
 
         WP_CLI::success(sprintf('Deleted %s donations and %s donors.', number_format($result['donations']), number_format($result['donors'])));
+    }
+
+    /**
+     * Create published pages that show GiveWP blocks and shortcodes.
+     *
+     * ## OPTIONS
+     *
+     * [--campaign=<id>]
+     * : Campaign the campaign blocks use. Form blocks use its default form.
+     *
+     * [--form=<id>]
+     * : Donation form to use instead of a campaign, for a standalone form. Skips the campaign blocks and shortcodes.
+     *
+     * [--layout=<layout>]
+     * : One page per block or shortcode, a blocks page and a shortcodes page, or everything on one page.
+     * ---
+     * default: individual
+     * options:
+     *   - individual
+     *   - type
+     *   - single
+     * ---
+     *
+     * [--only=<names>]
+     * : Comma-separated block names or shortcode tags to create. Default: all of them.
+     *
+     * ## EXAMPLES
+     *
+     *     wp give-data pages --campaign=12
+     *     wp give-data pages --form=34 --layout=single
+     *     wp give-data pages --campaign=12 --only=givewp/campaign-grid,give_form
+     *
+     * @unreleased
+     *
+     * @subcommand pages
+     */
+    public function pages(array $args, array $assocArgs): void
+    {
+        $campaignId = Utils\get_flag_value($assocArgs, 'campaign');
+        $formId = Utils\get_flag_value($assocArgs, 'form');
+
+        if (($campaignId === null) === ($formId === null)) {
+            WP_CLI::error('Pass either --campaign=<id> or --form=<id>.');
+        }
+
+        if ($campaignId !== null) {
+            $campaign = Campaign::find(absint($campaignId));
+            if (!$campaign) {
+                WP_CLI::error(sprintf('Campaign %s not found.', $campaignId));
+            }
+            $campaignId = $campaign->id;
+            $formId = (int)$campaign->defaultFormId;
+        } elseif (get_post_type(absint($formId)) !== 'give_forms') {
+            WP_CLI::error(sprintf('Donation form %s not found.', $formId));
+        }
+
+        /** @var PageGenerator $generator */
+        $generator = give(PageGenerator::class);
+
+        // "Block: givewp/campaign-grid" => "givewp/campaign-grid", "Shortcode: [give_form]" => "give_form"
+        $titles = [];
+        foreach (array_keys($generator->getPageContents((int)$formId, $campaignId)) as $title) {
+            $titles[preg_replace('/^(Block: |Shortcode: \[)|\]$/', '', $title)] = $title;
+        }
+
+        $only = Utils\get_flag_value($assocArgs, 'only');
+        if ($only !== null) {
+            $names = array_map('trim', explode(',', $only));
+            $unknown = array_diff($names, array_keys($titles));
+            if ($unknown) {
+                WP_CLI::error(sprintf("Unknown: %s\nAvailable: %s", implode(', ', $unknown), implode(', ', array_keys($titles))));
+            }
+            $titles = array_intersect_key($titles, array_flip($names));
+        }
+
+        try {
+            $pageIds = $generator->generatePages(array_values($titles), (int)$formId, $campaignId, Utils\get_flag_value($assocArgs, 'layout', 'individual'));
+        } catch (Exception $e) {
+            WP_CLI::error($e->getMessage());
+        }
+
+        foreach ($pageIds as $pageId) {
+            WP_CLI::log(sprintf('%d  %s  %s', $pageId, get_the_title($pageId), get_permalink($pageId)));
+        }
+
+        WP_CLI::success(sprintf('Created %d pages.', count($pageIds)));
     }
 }

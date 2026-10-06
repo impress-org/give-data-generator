@@ -9,6 +9,10 @@ declare const window: {
         donationFormNonce: string;
         subscriptionNonce: string;
         cleanupNonce: string;
+        pageNonce: string;
+        pageTitles: string[];
+        formPageTitles: string[];
+        forms: { id: number; title: string }[];
     };
 } & Window;
 

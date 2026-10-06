@@ -5,6 +5,7 @@ import CampaignsTab from './tabs/CampaignsTab';
 import DonationsTab from './tabs/DonationsTab';
 import DonationFormsTab from './tabs/DonationFormsTab';
 import SubscriptionsTab from './tabs/SubscriptionsTab';
+import PagesTab from './tabs/PagesTab';
 import CleanupTab from './tabs/CleanupTab';
 import WpCliTab from './tabs/WpCliTab';
 
@@ -35,6 +36,11 @@ const DataGeneratorApp: React.FC = () => {
             name: 'subscriptions',
             title: __('Subscriptions', 'give-data-generator'),
             content: <SubscriptionsTab />
+        },
+        {
+            name: 'pages',
+            title: __('Pages', 'give-data-generator'),
+            content: <PagesTab />
         },
         {
             name: 'cleanup',
