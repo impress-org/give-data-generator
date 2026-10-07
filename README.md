@@ -57,7 +57,7 @@ php bin/report.php
 Or restore a saved dataset instead of generating it, then snapshot your own:
 
 ```
-wp give-data restore https://github.com/impress-org/give-data-generator/releases/download/datasets/1m-givewp-4.18.0.sql.gz
+wp give-data restore https://github.com/impress-org/give-data-generator/releases/download/datasets/1m-givewp-4.18.0.sql.gz --yes
 wp give-data snapshot 1m
 ```
 

@@ -37,7 +37,8 @@ active, listed in `Benchmark::WORKLOADS`. Prefix its workload names with the add
 
 ## Running it
 
-On a wp-env site with GiveWP and this plugin active:
+On a site with GiveWP and this plugin active. The commands below are written as plain `wp`; in
+wp-env, run each one as `npx wp-env run cli wp ...` from the directory that started the site.
 
 ```bash
 wp give-data bench 100k --donations=100000 --save
@@ -55,12 +56,13 @@ measure whatever the site holds.
 Generating is the slow part, so each size is kept as a database dump that restores in minutes:
 
 ```bash
-wp give-data restore https://github.com/impress-org/give-data-generator/releases/download/datasets/1m-givewp-4.18.0.sql.gz
+wp give-data restore https://github.com/impress-org/give-data-generator/releases/download/datasets/1m-givewp-4.18.0.sql.gz --yes
 wp give-data bench 1m --save
 ```
 
 `restore` replaces every table on the site with the dump, so only run it on a throwaway site. It
-takes a path or a URL. The dumps live as assets on the `datasets` release of this repository:
+takes a path or a URL and asks before it starts unless you pass `--yes`. The 1M dump takes about
+four minutes. The dumps live as assets on the `datasets` release of this repository:
 `100k-givewp-4.18.0.sql.gz`, `400k-givewp-4.18.0.sql.gz` and `1m-givewp-4.18.0.sql.gz`.
 
 To replace a dump, generate the dataset again on a clean site and save it:
