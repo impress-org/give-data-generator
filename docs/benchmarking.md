@@ -83,7 +83,9 @@ minutes and its benchmark takes ten to fifteen.
 GiveWP version, storage in use, donation and campaign counts, database version, InnoDB buffer pool
 size, PHP version, active plugins, and all three timed runs per workload under `runs_ms`.
 
-**The report page** (`benchmarks/report.html`) shows every saved result as a series. Workloads are
+**The report page** is published at https://impress-org.github.io/give-data-generator/ from the
+results on `main`, and `benchmarks/report.html` is the same page in the checkout. It shows every
+saved result as a series. Workloads are
 grouped by what they stand for (admin screens, REST API v3, campaign and form totals, reports and
 legacy, writes) with a plain-language label each; the raw name and a one-line description are in
 the tooltip and the table. Each dot is one run on a log time axis, so 2 ms and 50 s sit on the
@@ -125,7 +127,8 @@ The point of the tool. A before and after on the same data, on the same machine:
    ```
 
 4. Commit the two result files and the regenerated `benchmarks/report.html` with the pull request
-   that carries the change, so the numbers live next to what produced them. Give the files a label
+   that carries the change, so the numbers live next to what produced them. Once merged, the
+   published page picks them up on its own. Give the files a label
    that says what they measure, such as `1m-seq-index`, not `after`.
 
 Numbers depend on the machine that produced them. Compare runs from the same machine, and treat a
