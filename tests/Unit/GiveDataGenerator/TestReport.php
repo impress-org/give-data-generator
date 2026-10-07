@@ -30,7 +30,7 @@ class TestReport extends TestCase
 
         $out = Report::table($run);
 
-        $this->assertMatchesRegularExpression('/donation_create\s+11\.1 ms\s+80\s+3  meta rows 25/', $out);
+        $this->assertMatchesRegularExpression('/donation_create\s+11\.1 ms\s+-\s+-\s+80\s+3  meta rows 25/', $out);
     }
 
     private function result(string $label, array $workloads): array

@@ -15,8 +15,9 @@ use WP_REST_Request;
  * Times GiveWP's everyday read and write workloads against whatever data the site holds.
  *
  * Every workload goes through the real code path an admin screen, REST client or template would
- * use. Each runs once to warm up and then three times; the median is kept, along with peak PHP
- * memory (per run on PHP 8.2+, cumulative before that) and the database queries one run makes.
+ * use. Each runs once to warm up and then three times; the median is kept, along with the
+ * warm-up's own time as the first-load figure, peak PHP memory (per run on PHP 8.2+, cumulative
+ * before that) and the database queries one run makes.
  * A workload slower than {@see BUDGET_MS} on its warm-up is recorded from that run alone.
  * Workload classes register themselves through {@see measure()}; add one to {@see WORKLOADS} to
  * include it, and have it bail when the plugin it measures is not active.
@@ -196,9 +197,21 @@ class Benchmark
         $timed = $capped ? $runs : array_slice($runs, 1);
         $times = array_column($timed, 'ms');
         sort($times);
+        $median = $times[intdiv(count($times), 2)];
+        $mean = array_sum($times) / count($times);
+        // Sample standard deviation of the timed runs; with one run there is no spread to report.
+        $stdev = count($times) > 1
+            ? sqrt(array_sum(array_map(static function ($t) use ($mean) {
+                return ($t - $mean) ** 2;
+            }, $times)) / (count($times) - 1))
+            : 0.0;
 
         $this->results[$name] = array_merge([
-            'ms' => round($times[intdiv(count($times), 2)], 1),
+            'ms' => round($median, 1),
+            'stdev_ms' => round($stdev, 1),
+            'stdev_pct' => $median > 0 ? round($stdev / $median * 100, 1) : 0.0,
+            // The first load, before the database and object caches are warm. Not part of the median.
+            'first_ms' => round($runs[0]['ms'], 1),
             'runs_ms' => array_map(static function ($time) {
                 return round($time, 1);
             }, $times),

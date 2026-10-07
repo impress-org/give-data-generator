@@ -16,12 +16,14 @@ class Report
     public static function table(array $run): string
     {
         $out = self::heading($run) . "\n\n";
-        $out .= sprintf("%-36s %12s %10s %8s\n", 'workload', 'median', 'peak MB', 'queries');
+        $out .= sprintf("%-36s %12s %7s %12s %10s %8s\n", 'workload', 'median', 'spread', 'first load', 'peak MB', 'queries');
         foreach ($run['workloads'] as $name => $workload) {
             $out .= sprintf(
-                "%-36s %12s %10s %8d%s\n",
+                "%-36s %12s %7s %12s %10s %8d%s\n",
                 $name,
                 self::duration($workload['ms']),
+                isset($workload['stdev_pct']) ? '±' . $workload['stdev_pct'] . '%' : '-',
+                isset($workload['first_ms']) ? self::duration($workload['first_ms']) : '-',
                 $workload['peak_mb'],
                 $workload['queries'],
                 (isset($workload['meta_rows']) ? "  meta rows {$workload['meta_rows']}" : '')

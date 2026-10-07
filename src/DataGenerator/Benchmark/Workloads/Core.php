@@ -58,6 +58,10 @@ class Core
         $bench->measure('donors_screen_search_email', static function () use ($bench) {
             $bench->rest('/give-api/v2/admin/donors', ['page' => 1, 'perPage' => 30, 'search' => $bench->donor->email]);
         });
+        // The Campaigns screen reads totals from the campaigns data cache, which is how a site has it.
+        $bench->measure('campaigns_screen_page1', static function () use ($bench) {
+            $bench->rest('/givewp/v3/campaigns/list-table', ['page' => 1, 'perPage' => 30]);
+        });
     }
 
     /**
@@ -76,6 +80,16 @@ class Core
         });
         $bench->measure('donor_api_v3_statistics', static function () use ($bench) {
             $bench->rest('/givewp/v3/donors/' . $bench->donor->id . '/statistics');
+        });
+        $bench->measure('campaigns_api_v3_page1', static function () use ($bench) {
+            $bench->rest('/givewp/v3/campaigns', ['page' => 1, 'per_page' => 30]);
+        });
+        // The two requests the campaign details screen makes for its header and chart.
+        $bench->measure('campaign_api_v3_statistics', static function () use ($bench) {
+            $bench->rest('/givewp/v3/campaigns/' . $bench->campaign->id . '/statistics');
+        });
+        $bench->measure('campaign_api_v3_revenue', static function () use ($bench) {
+            $bench->rest('/givewp/v3/campaigns/' . $bench->campaign->id . '/revenue');
         });
     }
 

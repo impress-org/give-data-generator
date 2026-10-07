@@ -47,9 +47,13 @@ $catalog = [
     'donations_screen_stats' => ['Admin screens', 'Donations screen, stats bar', 'The totals strip above the Donations list: give-api/v2/admin/donations/stats.'],
     'donors_screen_page1' => ['Admin screens', 'Donors screen, page 1', 'The Donors list table loading its first page: give-api/v2/admin/donors.'],
     'donors_screen_search_email' => ['Admin screens', 'Donors screen, search by email', 'The Donors list filtered by a donor email.'],
+    'campaigns_screen_page1' => ['Admin screens', 'Campaigns screen, page 1', 'The Campaigns list table loading its first page: givewp/v3/campaigns/list-table. Totals come from the campaigns data cache, as on a live site.'],
     'donations_api_v3_page1' => ['REST API v3', 'Donations list', 'GET givewp/v3/donations, 30 per page, the public API and newer admin apps.'],
     'donors_api_v3_page1' => ['REST API v3', 'Donors list', 'GET givewp/v3/donors, 30 per page, donors with donations only.'],
     'donor_api_v3_statistics' => ['REST API v3', 'Donor statistics', 'GET givewp/v3/donors/{id}/statistics for one donor.'],
+    'campaigns_api_v3_page1' => ['REST API v3', 'Campaigns list', 'GET givewp/v3/campaigns, 30 per page.'],
+    'campaign_api_v3_statistics' => ['REST API v3', 'Campaign statistics', 'GET givewp/v3/campaigns/{id}/statistics, the campaign details header.'],
+    'campaign_api_v3_revenue' => ['REST API v3', 'Campaign revenue', 'GET givewp/v3/campaigns/{id}/revenue, the campaign details chart.'],
     'campaigns_data_all_uncached' => ['Campaign and form totals', 'All campaign totals, uncached', 'CampaignsDataQuery for every campaign with caches cleared: what refreshes the campaign list totals.'],
     'campaign_grid_12_uncached' => ['Campaign and form totals', 'Campaign grid, 12 campaigns', 'CampaignDonationQuery sum, count and donor count for 12 campaigns, as the campaign grid block does.'],
     'campaign_sum_intended' => ['Campaign and form totals', 'One campaign total', 'CampaignDonationQuery::sumIntendedAmount() for one campaign.'],
@@ -95,7 +99,7 @@ $runName = static function (array $run): string {
 /**
  * One dot-plot chart. $value picks the figure from a workload, $scale maps it to 0..1.
  */
-$chart = static function (string $title, string $unit, callable $value, callable $scale, array $ticks, callable $tickLabel) use ($runs, $groups, $label, $describe, $e, $light, $dark): string {
+$chart = static function (string $title, string $unit, callable $value, callable $scale, array $ticks, callable $tickLabel) use ($runs, $groups, $label, $describe, $duration, $e, $light, $dark): string {
     $labelWidth = 290;
     $plotWidth = 620;
     $rowHeight = 30;
@@ -133,8 +137,18 @@ $chart = static function (string $title, string $unit, callable $value, callable
                 $v = $value($w);
                 $cx = $x($v);
                 $capped = !empty($w['capped']);
+                if (!empty($w['runs_ms']) && count($w['runs_ms']) > 1 && $value($w) === (float)$w['ms']) {
+                    // The spread of the timed runs, as a hairline the dot sits on.
+                    $svg .= sprintf(
+                        '<line class="spread" x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f"/>',
+                        $x((float)min($w['runs_ms'])),
+                        $cy,
+                        $x((float)max($w['runs_ms'])),
+                        $cy
+                    );
+                }
                 $svg .= sprintf(
-                    '<circle class="dot%s" style="--c:%s;--cd:%s" cx="%.1f" cy="%.1f" r="5" tabindex="0" data-name="%s" data-describe="%s" data-run="%s" data-value="%s" data-ms="%s" data-mb="%s" data-queries="%s"%s><title>%s</title></circle>',
+                    '<circle class="dot%s" style="--c:%s;--cd:%s" cx="%.1f" cy="%.1f" r="5" tabindex="0" data-name="%s" data-describe="%s" data-run="%s" data-value="%s" data-ms="%s" data-spread="%s" data-first="%s" data-mb="%s" data-queries="%s"%s><title>%s</title></circle>',
                     $capped ? ' capped' : '',
                     $light[$r] ?? '#898781',
                     $dark[$r] ?? '#898781',
@@ -145,6 +159,8 @@ $chart = static function (string $title, string $unit, callable $value, callable
                     $e($run['label']),
                     $e($tickLabel($v)),
                     $e($w['ms']),
+                    $e(isset($w['stdev_pct']) ? '±' . $w['stdev_pct'] . '%' : ''),
+                    $e(isset($w['first_ms']) ? $duration((float)$w['first_ms']) : ''),
                     $e($w['peak_mb']),
                     $e($w['queries']),
                     $capped ? ' data-capped="1"' : '',
@@ -226,7 +242,7 @@ foreach ($groups as $group => $names) {
         foreach ($runs as $run) {
             $w = $run['workloads'][$name] ?? null;
             $table .= $w
-            ? '<td>' . $e($duration($w['ms'])) . (empty($w['capped']) ? '' : '*') . '<br><small>' . $e($w['peak_mb'] . ' MB · ' . number_format($w['queries']) . ' q') . '</small></td>'
+            ? '<td>' . $e($duration($w['ms'])) . (empty($w['capped']) ? '' : '*') . '<br><small>' . $e((isset($w['stdev_pct']) ? '±' . $w['stdev_pct'] . '% · ' : '') . (isset($w['first_ms']) ? 'first ' . $duration((float)$w['first_ms']) . ' · ' : '') . $w['peak_mb'] . ' MB · ' . number_format($w['queries']) . ' q') . '</small></td>'
             : '<td>-</td>';
         }
         $table .= '</tr>';
@@ -283,6 +299,7 @@ svg { width: 100%; height: auto; display: block; overflow: visible; }
 .group { fill: var(--ink); font-size: 13px; font-weight: 600; }
 tr.group th { padding-top: 14px; color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--grid); }
 .value { fill: var(--ink-2); font-size: 12px; }
+.spread { stroke: var(--axis); stroke-width: 2; stroke-linecap: round; }
 .dot { fill: var(--dot); stroke: var(--surface); stroke-width: 2; cursor: default; }
 .dot.capped { fill: var(--surface); stroke: var(--dot); stroke-width: 2.5; }
 .dot:hover, .dot:focus { r: 7; outline: none; }
@@ -321,7 +338,7 @@ small { color: var(--muted); }
         var key = document.createElement('span'); key.className = 'k'; key.style.setProperty('--c', getComputedStyle(dot).fill);
         var strong = document.createElement('strong'); strong.textContent = dot.dataset.value;
         var run = document.createElement('div'); run.appendChild(key); run.appendChild(document.createTextNode(dot.dataset.run + (dot.dataset.capped ? ' (single run, over budget)' : '')));
-        var more = document.createElement('div'); more.textContent = dot.dataset.ms + ' ms · ' + dot.dataset.mb + ' MB peak · ' + dot.dataset.queries + ' queries';
+        var more = document.createElement('div'); more.textContent = dot.dataset.ms + ' ms median' + (dot.dataset.spread ? ' ' + dot.dataset.spread : '') + (dot.dataset.first ? ' · ' + dot.dataset.first + ' first load' : '') + ' · ' + dot.dataset.mb + ' MB peak · ' + dot.dataset.queries + ' queries';
         var what = document.createElement('div'); what.className = 'what'; what.textContent = dot.dataset.name + (dot.dataset.describe ? '. ' + dot.dataset.describe : '');
         tip.appendChild(strong); tip.appendChild(run); tip.appendChild(more); tip.appendChild(what);
         tip.style.display = 'block';

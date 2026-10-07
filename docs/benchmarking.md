@@ -73,7 +73,9 @@ minutes and its benchmark takes ten to fifteen.
 
 | column | meaning |
 |:--|:--|
-| median | the middle of three timed runs, after one warm-up run that is thrown away |
+| median | the middle of three timed runs, taken after one warm-up run |
+| spread | the sample standard deviation of the three timed runs as a share of the median; over about 10% means the machine was busy and the run is worth repeating |
+| first load | the warm-up run's own time: the request before the database and object caches are warm, closest to what a person sees opening a screen cold |
 | peak MB | the most PHP memory one run used (on PHP 8.1 and older the peak cannot be reset between runs, so it is the high-water mark of the whole benchmark so far) |
 | queries | database queries one run made |
 | meta rows | for `donation_create`, how many donation meta rows one donation wrote |
@@ -129,7 +131,10 @@ The point of the tool. A before and after on the same data, on the same machine:
    that says what they measure, such as `1m-seq-index`, not `after`.
 
 Numbers depend on the machine that produced them. Compare runs from the same machine, and treat a
-difference under about ten percent as noise unless three runs agree.
+difference under about ten percent as noise unless three runs agree. The median is a warm figure:
+the same request repeated with the database cache already holding the rows. The first-load figure
+is the cold one. On a screen that is slow because its query is slow, the two are close; a gap
+between them means caching, not the query, is what the user is waiting on.
 
 ## Datasets
 
@@ -180,9 +185,10 @@ the zip workflow, which attaches a plugin zip named after the tag; delete that a
 
 Every workload goes through the real code path an admin screen, REST client or template uses:
 
-- the Donations and Donors admin screens: first page, last page, search, and the stats bar
-  (`give-api/v2/admin/*`)
-- the v3 REST API: donation and donor lists, donor statistics (`givewp/v3/*`)
+- the Donations, Donors and Campaigns admin screens: first page, last page, search, the stats bar
+  (`give-api/v2/admin/*`, `givewp/v3/campaigns/list-table`)
+- the v3 REST API: donation, donor and campaign lists, donor statistics, campaign statistics and
+  revenue (`givewp/v3/*`)
 - campaign totals and goals: `CampaignsDataQuery`, `CampaignDonationQuery`, the 12-campaign grid
 - form totals: `give_goal_progress_stats()` and the async column helpers for 20 forms
 - reports and statistics: the reports Income route over the past week, which is what the Reports
