@@ -174,23 +174,25 @@ class Core
             return $donation;
         };
 
-        $bench->measure('donation_create', static function () use ($newDonation, $wpdb) {
-            $donation = $newDonation();
-            $metaRows = (int)$wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$wpdb->prefix}give_donationmeta WHERE donation_id = %d",
-                $donation->id
-            ));
-            return ['meta_rows' => $metaRows];
-        });
+        try {
+            $bench->measure('donation_create', static function () use ($newDonation, $wpdb) {
+                $donation = $newDonation();
+                $metaRows = (int)$wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}give_donationmeta WHERE donation_id = %d",
+                    $donation->id
+                ));
+                return ['meta_rows' => $metaRows];
+            });
 
-        $updated = $newDonation();
-        $bench->measure('donation_update_status', static function () use ($updated) {
-            $updated->status = $updated->status->isComplete() ? DonationStatus::PENDING() : DonationStatus::COMPLETE();
-            $updated->save();
-        });
-
-        foreach ($created as $donation) {
-            $donation->delete();
+            $updated = $newDonation();
+            $bench->measure('donation_update_status', static function () use ($updated) {
+                $updated->status = $updated->status->isComplete() ? DonationStatus::PENDING() : DonationStatus::COMPLETE();
+                $updated->save();
+            });
+        } finally {
+            foreach ($created as $donation) {
+                $donation->delete();
+            }
         }
     }
 }

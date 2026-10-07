@@ -125,7 +125,7 @@ foreach ($runs as $run) {
         $maxMb = max($maxMb, $w['peak_mb']);
     }
 }
-$logMax = ceil(log10($maxMs));
+$logMax = max(1, ceil(log10($maxMs)));
 $timeTicks = [];
 for ($p = 0; $p <= $logMax; $p++) {
     $timeTicks[] = 10 ** $p;

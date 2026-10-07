@@ -237,7 +237,10 @@ class GiveDataCommand
         $home = get_option('home');
 
         WP_CLI::log('Unpacking...');
-        $sql = tempnam(get_temp_dir(), 'give-restore-') . '.sql';
+        // db import reads the extension, so the dump needs a .sql name; drop the empty file tempnam made.
+        $tmp = tempnam(get_temp_dir(), 'give-restore-');
+        $sql = $tmp . '.sql';
+        unlink($tmp);
         $in = @fopen('compress.zlib://' . $source, 'rb');
         if (!$in) {
             WP_CLI::error("Could not open $source.");
