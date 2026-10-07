@@ -171,6 +171,124 @@ class GiveDataCommand
     }
 
     /**
+     * Save the whole database as a gzipped SQL dump, so a dataset can be restored instead of generated again.
+     *
+     * ## OPTIONS
+     *
+     * <label>
+     * : A name for the dataset, such as 100k, 400k or 1m. The file is <label>-givewp-<version>.sql.gz.
+     *
+     * [--dir=<dir>]
+     * : Where to write it. Defaults to the plugin's own benchmarks/snapshots directory.
+     *
+     * ## EXAMPLES
+     *
+     *     wp give-data snapshot 1m
+     *
+     * @since 1.2.0
+     *
+     * @subcommand snapshot
+     */
+    public function snapshot(array $args, array $assocArgs): void
+    {
+        $dir = rtrim(Utils\get_flag_value($assocArgs, 'dir', GIVE_DATA_GENERATOR_DIR . 'benchmarks/snapshots'), '/');
+        if (!wp_mkdir_p($dir)) {
+            WP_CLI::error("Could not create $dir.");
+        }
+        $file = sprintf('%s/%s-givewp-%s.sql.gz', $dir, $args[0], GIVE_VERSION);
+        $sql = $file . '.tmp.sql';
+        $started = microtime(true);
+
+        WP_CLI::log('Exporting the database...');
+        $this->runInProcess('db export ' . escapeshellarg($sql) . ' --add-drop-table --single-transaction --quick');
+
+        WP_CLI::log('Compressing...');
+        $this->copyStream(fopen($sql, 'rb'), gzopen($file, 'wb6'));
+        unlink($sql);
+
+        WP_CLI::success(sprintf('Saved %s (%s, %ds).', $file, size_format(filesize($file)), round(microtime(true) - $started)));
+    }
+
+    /**
+     * Replace the database with a snapshot taken by `wp give-data snapshot`. Everything on the site is replaced.
+     *
+     * ## OPTIONS
+     *
+     * <source>
+     * : Path or URL of a .sql.gz snapshot.
+     *
+     * [--yes]
+     * : Skip the confirmation prompt.
+     *
+     * ## EXAMPLES
+     *
+     *     wp give-data restore benchmarks/snapshots/1m-givewp-4.18.0.sql.gz
+     *     wp give-data restore https://github.com/impress-org/give-data-generator/releases/download/datasets/1m-givewp-4.18.0.sql.gz
+     *
+     * @since 1.2.0
+     *
+     * @subcommand restore
+     */
+    public function restore(array $args, array $assocArgs): void
+    {
+        $source = $args[0];
+        WP_CLI::confirm("Replace every table on this site with $source?", $assocArgs);
+        $started = microtime(true);
+        $home = get_option('home');
+
+        WP_CLI::log('Unpacking...');
+        $sql = tempnam(get_temp_dir(), 'give-restore-') . '.sql';
+        $in = @fopen('compress.zlib://' . $source, 'rb');
+        if (!$in) {
+            WP_CLI::error("Could not open $source.");
+        }
+        $this->copyStream($in, fopen($sql, 'wb'));
+
+        WP_CLI::log('Importing...');
+        $this->runInProcess('db reset --yes');
+        $this->runInProcess('db import ' . escapeshellarg($sql));
+        unlink($sql);
+
+        // wp-env pins the URL with WP_HOME and WP_SITEURL; elsewhere the dump's URL has to be rewritten.
+        wp_cache_flush();
+        $restoredHome = get_option('home');
+        if ($restoredHome !== $home) {
+            WP_CLI::log("Rewriting $restoredHome to $home...");
+            $this->runInProcess(sprintf('search-replace %s %s --all-tables --skip-columns=guid --quiet', escapeshellarg($restoredHome), escapeshellarg($home)));
+        }
+
+        WP_CLI::success(sprintf('Restored %s (%ds).', $source, round(microtime(true) - $started)));
+    }
+
+    /**
+     * Runs another WP-CLI command in this process. A child process would start without the
+     * container's environment, and wp-env's wp-config reads the database credentials from it.
+     *
+     * @since 1.2.0
+     */
+    private function runInProcess(string $command): void
+    {
+        WP_CLI::runcommand($command, ['launch' => false, 'exit_error' => true]);
+    }
+
+    /**
+     * Copies one stream into another in chunks; gzopen handles compression on either side.
+     *
+     * @since 1.2.0
+     *
+     * @param resource $in
+     * @param resource $out
+     */
+    private function copyStream($in, $out): void
+    {
+        while (!feof($in)) {
+            fwrite($out, fread($in, 1048576));
+        }
+        fclose($in);
+        fclose($out);
+    }
+
+    /**
      * Ensures the campaigns exist, then adds donations, logging progress as it goes.
      *
      * @since 1.2.0

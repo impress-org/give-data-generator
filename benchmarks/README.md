@@ -46,8 +46,33 @@ wp give-data bench 1m --donations=1000000 --save
 ```
 
 `--donations` tops the site up to that many donations across 50 campaigns before measuring.
-Generation goes through the Donation model and takes about 2.5 minutes per 100k. It is additive,
-so one site serves all three sizes in turn. Leave the flag off to measure whatever the site holds.
+Generation goes through the Donation model and takes from 15 minutes per 100k on a quiet machine
+to hours for 1M. It is additive, so one site serves all three sizes in turn. Leave the flag off to
+measure whatever the site holds.
+
+### Snapshots
+
+Generating is the slow part, so each size is kept as a database dump that restores in minutes:
+
+```bash
+wp give-data restore https://github.com/impress-org/give-data-generator/releases/download/datasets/1m-givewp-4.18.0.sql.gz
+wp give-data bench 1m --save
+```
+
+`restore` replaces every table on the site with the dump, so only run it on a throwaway site. It
+takes a path or a URL. The dumps live as assets on the `datasets` release of this repository:
+`100k-givewp-4.18.0.sql.gz`, `400k-givewp-4.18.0.sql.gz` and `1m-givewp-4.18.0.sql.gz`.
+
+To replace a dump, generate the dataset again on a clean site and save it:
+
+```bash
+wp give-data donations 100000 --campaigns=50
+wp give-data snapshot 100k
+```
+
+That writes `benchmarks/snapshots/100k-givewp-<version>.sql.gz`, which is gitignored; upload it to
+the release. Date windows in the benchmark are measured back from the newest donation rather than
+from today, so a dump keeps measuring the same rows as it ages.
 
 `--save` writes `results/<label>-<storage>-<date>-<version>.json` into this directory (or into
 the directory you give it) and the table is printed either way. `--storage=legacy|new` is recorded

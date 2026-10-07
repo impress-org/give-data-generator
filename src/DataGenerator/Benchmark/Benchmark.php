@@ -50,7 +50,7 @@ class Benchmark
     public $weekAgo;
     /** @var DateTime */
     public $yearAgo;
-    /** @var DateTime */
+    /** @var DateTime the newest donation's date, which every window is measured back from */
     public $now;
 
     /** @var callable|null receives each workload name before it runs */
@@ -94,9 +94,12 @@ class Benchmark
         if (!$this->donor) {
             throw new RuntimeException('The most recent donation has no donor. Generate data first: wp give-data donations 100000 --campaigns=50');
         }
-        $this->weekAgo = new DateTime('-7 days');
-        $this->yearAgo = new DateTime('-1 year');
-        $this->now = new DateTime();
+        // Date windows hang off the newest donation, not the clock, so a restored snapshot measures
+        // the same rows on any day and two runs on the same data read the same windows.
+        $newest = $wpdb->get_var("SELECT MAX(post_date) FROM {$wpdb->posts} WHERE post_type = 'give_payment'");
+        $this->now = new DateTime($newest ?: 'now');
+        $this->weekAgo = (clone $this->now)->modify('-7 days');
+        $this->yearAgo = (clone $this->now)->modify('-1 year');
     }
 
     /**

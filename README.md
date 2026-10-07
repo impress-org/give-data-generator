@@ -53,6 +53,13 @@ wp give-data bench 1m --donations=1000000 --save
 php bin/compare.php benchmarks/results/before.json benchmarks/results/after.json
 ```
 
+Or restore a saved dataset instead of generating it, then snapshot your own:
+
+```
+wp give-data restore https://github.com/impress-org/give-data-generator/releases/download/datasets/1m-givewp-4.18.0.sql.gz
+wp give-data snapshot 1m
+```
+
 See [benchmarks/README.md](benchmarks/README.md) for what is measured and how results are kept.
 
 ## Installation
