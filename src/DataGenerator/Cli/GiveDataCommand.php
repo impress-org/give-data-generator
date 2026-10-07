@@ -203,7 +203,7 @@ class GiveDataCommand
         $this->runInProcess('db export ' . escapeshellarg($sql) . ' --add-drop-table --single-transaction --quick');
 
         WP_CLI::log('Compressing...');
-        $this->copyStream(fopen($sql, 'rb'), gzopen($file, 'wb6'));
+        $this->copyStream($sql, 'compress.zlib://' . $file);
         unlink($sql);
 
         WP_CLI::success(sprintf('Saved %s (%s, %ds).', $file, size_format(filesize($file)), round(microtime(true) - $started)));
@@ -243,11 +243,7 @@ class GiveDataCommand
         $tmp = tempnam(get_temp_dir(), 'give-restore-');
         $sql = $tmp . '.sql';
         unlink($tmp);
-        $in = @fopen('compress.zlib://' . $source, 'rb');
-        if (!$in) {
-            WP_CLI::error("Could not open $source.");
-        }
-        $this->copyStream($in, fopen($sql, 'wb'));
+        $this->copyStream('compress.zlib://' . $source, $sql);
 
         WP_CLI::log('Importing...');
         $this->runInProcess('db reset --yes');
@@ -279,17 +275,25 @@ class GiveDataCommand
     }
 
     /**
-     * Copies one stream into another in chunks; gzopen handles compression on either side.
+     * Copies one file into another in chunks. A compress.zlib:// path gzips or gunzips as it goes,
+     * and works for URLs too, so this is both the snapshot's compressor and the restore's downloader.
      *
      * @since 1.2.0
-     *
-     * @param resource $in
-     * @param resource $out
      */
-    private function copyStream($in, $out): void
+    private function copyStream(string $from, string $to): void
     {
+        $in = @fopen($from, 'rb');
+        if (!$in) {
+            WP_CLI::error("Could not open $from.");
+        }
+        $out = @fopen($to, 'wb');
+        if (!$out) {
+            WP_CLI::error("Could not write $to.");
+        }
         while (!feof($in)) {
-            fwrite($out, fread($in, 1048576));
+            if (fwrite($out, fread($in, 1048576)) === false) {
+                WP_CLI::error("Could not write $to.");
+            }
         }
         fclose($in);
         fclose($out);

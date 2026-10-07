@@ -74,7 +74,7 @@ minutes and its benchmark takes ten to fifteen.
 | column | meaning |
 |:--|:--|
 | median | the middle of three timed runs, after one warm-up run that is thrown away |
-| peak MB | the most PHP memory one run used |
+| peak MB | the most PHP memory one run used (on PHP 8.1 and older the peak cannot be reset between runs, so it is the high-water mark of the whole benchmark so far) |
 | queries | database queries one run made |
 | meta rows | for `donation_create`, how many donation meta rows one donation wrote |
 | single run, over budget | the warm-up took over a minute, so the figure is from that one run |
