@@ -259,7 +259,10 @@ $html = <<<HTML
 <title>GiveWP benchmark</title>
 <style>
 :root { --surface: #fcfcfb; --page: #f9f9f7; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781; --grid: #e1e0d9; --axis: #c3c2b7; --tip: #ffffff; }
-@media (prefers-color-scheme: dark) { :root { --surface: #1a1a19; --page: #0d0d0d; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781; --grid: #2c2c2a; --axis: #383835; --tip: #262624; } .dot, .swatch { --c: var(--cd); } }
+.dot, .swatch { --dot: var(--c); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --surface: #1a1a19; --page: #0d0d0d; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781; --grid: #2c2c2a; --axis: #383835; --tip: #262624; color-scheme: dark; } :root:not([data-theme="light"]) .dot, :root:not([data-theme="light"]) .swatch { --dot: var(--cd); } }
+:root[data-theme="dark"] { --surface: #1a1a19; --page: #0d0d0d; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781; --grid: #2c2c2a; --axis: #383835; --tip: #262624; color-scheme: dark; }
+:root[data-theme="dark"] .dot, :root[data-theme="dark"] .swatch { --dot: var(--cd); }
 * { box-sizing: border-box; }
 body { margin: 0; padding: 24px 16px 48px; background: var(--page); color: var(--ink); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-variant-numeric: tabular-nums; }
 main { max-width: 980px; margin: 0 auto; }
@@ -267,7 +270,7 @@ h1 { font-size: 22px; margin: 0 0 4px; }
 .sub { color: var(--ink-2); margin: 0 0 20px; }
 .legend { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-wrap: wrap; gap: 6px 20px; color: var(--ink-2); font-size: 14px; }
 .legend li { display: flex; align-items: center; gap: 8px; }
-.swatch { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.swatch { width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: none; }
 .swatch.hollow { background: none; border: 2px solid var(--muted); }
 .chart { margin: 0 0 24px; padding: 16px 8px 8px; background: var(--surface); border-radius: 8px; }
 figcaption { font-weight: 600; margin: 0 8px 4px; }
@@ -280,8 +283,8 @@ svg { width: 100%; height: auto; display: block; overflow: visible; }
 .group { fill: var(--ink); font-size: 13px; font-weight: 600; }
 tr.group th { padding-top: 14px; color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--grid); }
 .value { fill: var(--ink-2); font-size: 12px; }
-.dot { fill: var(--c); stroke: var(--surface); stroke-width: 2; cursor: default; }
-.dot.capped { fill: var(--surface); stroke: var(--c); stroke-width: 2.5; }
+.dot { fill: var(--dot); stroke: var(--surface); stroke-width: 2; cursor: default; }
+.dot.capped { fill: var(--surface); stroke: var(--dot); stroke-width: 2.5; }
 .dot:hover, .dot:focus { r: 7; outline: none; }
 #tip { position: fixed; pointer-events: none; display: none; background: var(--tip); color: var(--ink); border: 1px solid var(--grid); border-radius: 6px; padding: 8px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.12); max-width: 320px; }
 #tip strong { font-size: 15px; }
