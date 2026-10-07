@@ -35,13 +35,52 @@ usort($runs, static function (array $a, array $b): int {
 $light = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
 $dark = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
 
-$workloads = [];
+/*
+ * What each workload is, for people who do not read Workloads/Core.php: group, a short label for
+ * the chart, and one sentence for the tooltip and the table. A workload missing here still shows,
+ * under "Other" with its raw name, so an add-on's workloads appear before anyone documents them.
+ */
+$catalog = [
+    'donations_screen_page1' => ['Admin screens', 'Donations screen, page 1', 'The Donations list table loading its first page of 30: give-api/v2/admin/donations.'],
+    'donations_screen_lastpage' => ['Admin screens', 'Donations screen, last page', 'The same list table on its last page, where the offset is largest.'],
+    'donations_screen_search_email' => ['Admin screens', 'Donations screen, search by email', 'The Donations list filtered by a donor email.'],
+    'donations_screen_stats' => ['Admin screens', 'Donations screen, stats bar', 'The totals strip above the Donations list: give-api/v2/admin/donations/stats.'],
+    'donors_screen_page1' => ['Admin screens', 'Donors screen, page 1', 'The Donors list table loading its first page: give-api/v2/admin/donors.'],
+    'donors_screen_search_email' => ['Admin screens', 'Donors screen, search by email', 'The Donors list filtered by a donor email.'],
+    'donations_api_v3_page1' => ['REST API v3', 'Donations list', 'GET givewp/v3/donations, 30 per page, the public API and newer admin apps.'],
+    'donors_api_v3_page1' => ['REST API v3', 'Donors list', 'GET givewp/v3/donors, 30 per page, donors with donations only.'],
+    'donor_api_v3_statistics' => ['REST API v3', 'Donor statistics', 'GET givewp/v3/donors/{id}/statistics for one donor.'],
+    'campaigns_data_all_uncached' => ['Campaign and form totals', 'All campaign totals, uncached', 'CampaignsDataQuery for every campaign with caches cleared: what refreshes the campaign list totals.'],
+    'campaign_grid_12_uncached' => ['Campaign and form totals', 'Campaign grid, 12 campaigns', 'CampaignDonationQuery sum, count and donor count for 12 campaigns, as the campaign grid block does.'],
+    'campaign_sum_intended' => ['Campaign and form totals', 'One campaign total', 'CampaignDonationQuery::sumIntendedAmount() for one campaign.'],
+    'campaign_by_day_1y' => ['Campaign and form totals', 'Campaign donations by day, 1 year', 'CampaignDonationQuery grouped by day over the past year, the campaign details chart.'],
+    'forms_list_20_uncached' => ['Campaign and form totals', 'Forms list totals, 20 forms', 'Goal progress and the async count and revenue columns for 20 forms, as the legacy Forms list computes them.'],
+    'reports_income_7d_uncached' => ['Reports and legacy', 'Reports income, past week', 'The Reports page income widget over its default week: give-api/v2/reports/income. Loads every payment in range.'],
+    'legacy_stats_earnings_1y_uncached' => ['Reports and legacy', 'Legacy earnings, 1 year', 'Give_Payment_Stats::get_earnings() over the past year, used by legacy reports and add-ons.'],
+    'donor_statistics_query' => ['Reports and legacy', 'Donor statistics query', 'DonorStatisticsQuery lifetime, average and count for one donor, behind the donor details screen.'],
+    'donation_create' => ['Writes', 'Create a donation', 'Donation::create() through the model with every listener running; meta rows is what one donation writes.'],
+    'donation_update_status' => ['Writes', 'Save a status change', 'Flip a donation between pending and complete and save it.'],
+];
+
+$groups = [];
 foreach ($runs as $run) {
     foreach (array_keys($run['workloads']) as $name) {
-        $workloads[$name] = true;
+        $group = $catalog[$name][0] ?? 'Other';
+        $groups[$group][$name] = true;
     }
 }
-$workloads = array_keys($workloads);
+// Catalog order, then anything undocumented last.
+$order = array_unique(array_merge(array_column($catalog, 0), array_keys($groups)));
+$groups = array_replace(array_flip($order), $groups);
+$groups = array_filter($groups, 'is_array');
+$groups = array_map('array_keys', $groups);
+
+$label = static function (string $name) use ($catalog): string {
+    return $catalog[$name][1] ?? $name;
+};
+$describe = static function (string $name) use ($catalog): string {
+    return $catalog[$name][2] ?? '';
+};
 
 $e = static function ($value): string {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
@@ -56,12 +95,13 @@ $runName = static function (array $run): string {
 /**
  * One dot-plot chart. $value picks the figure from a workload, $scale maps it to 0..1.
  */
-$chart = static function (string $title, string $unit, callable $value, callable $scale, array $ticks, callable $tickLabel) use ($runs, $workloads, $e, $light, $dark): string {
+$chart = static function (string $title, string $unit, callable $value, callable $scale, array $ticks, callable $tickLabel) use ($runs, $groups, $label, $describe, $e, $light, $dark): string {
     $labelWidth = 290;
     $plotWidth = 620;
     $rowHeight = 30;
+    $groupHeight = 34;
     $top = 28;
-    $height = $top + count($workloads) * $rowHeight + 8;
+    $height = $top + count($groups) * $groupHeight + array_sum(array_map('count', $groups)) * $rowHeight + 8;
     $width = $labelWidth + $plotWidth + 24;
     $x = static function (float $v) use ($scale, $labelWidth, $plotWidth): float {
         return $labelWidth + $scale($v) * $plotWidth;
@@ -74,42 +114,50 @@ $chart = static function (string $title, string $unit, callable $value, callable
         $svg .= '<line class="grid" x1="' . $tx . '" y1="' . $top . '" x2="' . $tx . '" y2="' . ($height - 8) . '"/>';
         $svg .= '<text class="tick" x="' . $tx . '" y="' . ($top - 10) . '" text-anchor="middle">' . $e($tickLabel($tick)) . '</text>';
     }
-    foreach ($workloads as $i => $name) {
-        $cy = $top + $i * $rowHeight + $rowHeight / 2;
-        $svg .= '<text class="label" x="' . ($labelWidth - 12) . '" y="' . ($cy + 4) . '" text-anchor="end">' . $e($name) . '</text>';
-        $svg .= '<line class="row" x1="' . $labelWidth . '" y1="' . $cy . '" x2="' . ($labelWidth + $plotWidth) . '" y2="' . $cy . '"/>';
-        $last = null;
-        $rightmost = $labelWidth;
-        foreach ($runs as $r => $run) {
-            if (!isset($run['workloads'][$name])) {
-                continue;
+    $y = $top;
+    foreach ($groups as $group => $names) {
+        $svg .= '<text class="group" x="' . ($labelWidth - 12) . '" y="' . ($y + $groupHeight - 10) . '" text-anchor="end">' . $e($group) . '</text>';
+        $y += $groupHeight;
+        foreach ($names as $name) {
+            $cy = $y + $rowHeight / 2;
+            $y += $rowHeight;
+            $svg .= '<text class="label" x="' . ($labelWidth - 12) . '" y="' . ($cy + 4) . '" text-anchor="end">' . $e($label($name)) . '</text>';
+            $svg .= '<line class="row" x1="' . $labelWidth . '" y1="' . $cy . '" x2="' . ($labelWidth + $plotWidth) . '" y2="' . $cy . '"/>';
+            $last = null;
+            $rightmost = $labelWidth;
+            foreach ($runs as $r => $run) {
+                if (!isset($run['workloads'][$name])) {
+                    continue;
+                }
+                $w = $run['workloads'][$name];
+                $v = $value($w);
+                $cx = $x($v);
+                $capped = !empty($w['capped']);
+                $svg .= sprintf(
+                    '<circle class="dot%s" style="--c:%s;--cd:%s" cx="%.1f" cy="%.1f" r="5" tabindex="0" data-name="%s" data-describe="%s" data-run="%s" data-value="%s" data-ms="%s" data-mb="%s" data-queries="%s"%s><title>%s</title></circle>',
+                    $capped ? ' capped' : '',
+                    $light[$r] ?? '#898781',
+                    $dark[$r] ?? '#898781',
+                    $cx,
+                    $cy,
+                    $e($label($name)),
+                    $e($describe($name)),
+                    $e($run['label']),
+                    $e($tickLabel($v)),
+                    $e($w['ms']),
+                    $e($w['peak_mb']),
+                    $e($w['queries']),
+                    $capped ? ' data-capped="1"' : '',
+                    $e($run['label'] . ': ' . $tickLabel($v))
+                );
+                $last = [$cy, $tickLabel($v)];
+                $rightmost = max($rightmost, $cx);
             }
-            $w = $run['workloads'][$name];
-            $v = $value($w);
-            $cx = $x($v);
-            $capped = !empty($w['capped']);
-            $svg .= sprintf(
-                '<circle class="dot%s" style="--c:%s;--cd:%s" cx="%.1f" cy="%.1f" r="5" tabindex="0" data-run="%s" data-value="%s" data-ms="%s" data-mb="%s" data-queries="%s"%s><title>%s</title></circle>',
-                $capped ? ' capped' : '',
-                $light[$r] ?? '#898781',
-                $dark[$r] ?? '#898781',
-                $cx,
-                $cy,
-                $e($run['label']),
-                $e($tickLabel($v)),
-                $e($w['ms']),
-                $e($w['peak_mb']),
-                $e($w['queries']),
-                $capped ? ' data-capped="1"' : '',
-                $e($run['label'] . ': ' . $tickLabel($v))
-            );
-            $last = [$cy, $tickLabel($v)];
-            $rightmost = max($rightmost, $cx);
-        }
         // Only the latest run is labelled, to the right of every dot in the row; the rest is in the tooltip and the table.
-        if ($last) {
-            $fits = $rightmost < $labelWidth + $plotWidth - 70;
-            $svg .= '<text class="value" x="' . ($rightmost + ($fits ? 10 : -10)) . '" y="' . ($last[0] + 4) . '" text-anchor="' . ($fits ? 'start' : 'end') . '">' . $e($last[1]) . '</text>';
+            if ($last) {
+                $fits = $rightmost < $labelWidth + $plotWidth - 70;
+                $svg .= '<text class="value" x="' . ($rightmost + ($fits ? 10 : -10)) . '" y="' . ($last[0] + 4) . '" text-anchor="' . ($fits ? 'start' : 'end') . '">' . $e($last[1]) . '</text>';
+            }
         }
     }
     $svg .= '</svg></figure>';
@@ -171,15 +219,18 @@ foreach ($runs as $run) {
     $table .= '<th>' . $e($run['label']) . '<br><small>' . $e(number_format($run['donations']) . ' · ' . substr($run['date'], 0, 10)) . '</small></th>';
 }
 $table .= '</tr></thead><tbody>';
-foreach ($workloads as $name) {
-    $table .= '<tr><th>' . $e($name) . '</th>';
-    foreach ($runs as $run) {
-        $w = $run['workloads'][$name] ?? null;
-        $table .= $w
+foreach ($groups as $group => $names) {
+    $table .= '<tr class="group"><th colspan="' . (count($runs) + 1) . '">' . $e($group) . '</th></tr>';
+    foreach ($names as $name) {
+        $table .= '<tr><th>' . $e($label($name)) . '<br><small>' . $e($name) . '</small>' . ($describe($name) ? '<br><small>' . $e($describe($name)) . '</small>' : '') . '</th>';
+        foreach ($runs as $run) {
+            $w = $run['workloads'][$name] ?? null;
+            $table .= $w
             ? '<td>' . $e($duration($w['ms'])) . (empty($w['capped']) ? '' : '*') . '<br><small>' . $e($w['peak_mb'] . ' MB · ' . number_format($w['queries']) . ' q') . '</small></td>'
             : '<td>-</td>';
+        }
+        $table .= '</tr>';
     }
-    $table .= '</tr>';
 }
 $table .= '</tbody></table>';
 
@@ -226,12 +277,15 @@ svg { width: 100%; height: auto; display: block; overflow: visible; }
 .row { stroke: var(--grid); stroke-width: 1; stroke-dasharray: 2 3; }
 .tick { fill: var(--muted); font-size: 12px; }
 .label { fill: var(--ink-2); font-size: 13px; }
+.group { fill: var(--ink); font-size: 13px; font-weight: 600; }
+tr.group th { padding-top: 14px; color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--grid); }
 .value { fill: var(--ink-2); font-size: 12px; }
 .dot { fill: var(--c); stroke: var(--surface); stroke-width: 2; cursor: default; }
 .dot.capped { fill: var(--surface); stroke: var(--c); stroke-width: 2.5; }
 .dot:hover, .dot:focus { r: 7; outline: none; }
-#tip { position: fixed; pointer-events: none; display: none; background: var(--tip); color: var(--ink); border: 1px solid var(--grid); border-radius: 6px; padding: 8px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.12); max-width: 260px; }
+#tip { position: fixed; pointer-events: none; display: none; background: var(--tip); color: var(--ink); border: 1px solid var(--grid); border-radius: 6px; padding: 8px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.12); max-width: 320px; }
 #tip strong { font-size: 15px; }
+#tip .what { margin-top: 6px; color: var(--ink-2); }
 #tip .k { display: inline-block; width: 18px; border-top: 2px solid var(--c); vertical-align: middle; margin-right: 6px; }
 details { margin-top: 8px; }
 summary { cursor: pointer; color: var(--ink-2); }
@@ -265,7 +319,8 @@ small { color: var(--muted); }
         var strong = document.createElement('strong'); strong.textContent = dot.dataset.value;
         var run = document.createElement('div'); run.appendChild(key); run.appendChild(document.createTextNode(dot.dataset.run + (dot.dataset.capped ? ' (single run, over budget)' : '')));
         var more = document.createElement('div'); more.textContent = dot.dataset.ms + ' ms · ' + dot.dataset.mb + ' MB peak · ' + dot.dataset.queries + ' queries';
-        tip.appendChild(strong); tip.appendChild(run); tip.appendChild(more);
+        var what = document.createElement('div'); what.className = 'what'; what.textContent = dot.dataset.name + (dot.dataset.describe ? '. ' + dot.dataset.describe : '');
+        tip.appendChild(strong); tip.appendChild(run); tip.appendChild(more); tip.appendChild(what);
         tip.style.display = 'block';
         var w = tip.offsetWidth, h = tip.offsetHeight;
         tip.style.left = Math.min(x + 14, window.innerWidth - w - 8) + 'px';

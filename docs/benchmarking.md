@@ -83,8 +83,11 @@ minutes and its benchmark takes ten to fifteen.
 GiveWP version, storage in use, donation and campaign counts, database version, InnoDB buffer pool
 size, PHP version, active plugins, and all three timed runs per workload under `runs_ms`.
 
-**The report page** (`benchmarks/report.html`) shows every saved result as a series. Each row is a
-workload; each dot is one run on a log time axis, so 2 ms and 50 s sit on the same chart. A hollow
+**The report page** (`benchmarks/report.html`) shows every saved result as a series. Workloads are
+grouped by what they stand for (admin screens, REST API v3, campaign and form totals, reports and
+legacy, writes) with a plain-language label each; the raw name and a one-line description are in
+the tooltip and the table. Each dot is one run on a log time axis, so 2 ms and 50 s sit on the
+same chart. A hollow
 dot is a single run over budget. The second chart is peak memory. Hover or tab to a dot for its
 figures, and expand "Every figure as a table" for the numbers.
 
