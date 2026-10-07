@@ -79,6 +79,16 @@ the directory you give it) and the table is printed either way. `--storage=legac
 so runs against the two storage layouts can be told apart. `--format=json` prints the result
 instead of the table.
 
+To see every saved run on one page, with a dot per run on a log time axis for each workload and a
+second chart for peak memory:
+
+```bash
+php bin/report.php
+```
+
+That writes `benchmarks/report.html`; open it in a browser. Re-run it whenever a result lands and
+commit the page with the result.
+
 To compare two saved runs on the host:
 
 ```bash

@@ -51,6 +51,7 @@ Benchmark the site it produced, and compare runs:
 ```
 wp give-data bench 1m --donations=1000000 --save
 php bin/compare.php benchmarks/results/before.json benchmarks/results/after.json
+php bin/report.php
 ```
 
 Or restore a saved dataset instead of generating it, then snapshot your own:
