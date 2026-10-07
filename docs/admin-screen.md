@@ -42,7 +42,9 @@ block or shortcode, one page for blocks and one for shortcodes, or everything on
 
 ## WP-CLI
 
-Documents the commands and builds one from form fields, with a copy button.
+Documents the commands and builds one from form fields, with a copy button. It also lists the
+ready-made datasets (100k, 400k and 1M donations) with the `wp give-data restore` command that
+loads one in minutes, for QA on a throwaway site. See [benchmarking.md](benchmarking.md).
 
 ## Clean up
 
