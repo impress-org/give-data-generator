@@ -24,7 +24,8 @@ class Report
                 self::duration($workload['ms']),
                 $workload['peak_mb'],
                 $workload['queries'],
-                isset($workload['meta_rows']) ? "  meta rows {$workload['meta_rows']}" : ''
+                (isset($workload['meta_rows']) ? "  meta rows {$workload['meta_rows']}" : '')
+                . (empty($workload['capped']) ? '' : '  single run, over budget')
             );
         }
 

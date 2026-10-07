@@ -13,7 +13,8 @@ Every workload goes through the real code path an admin screen, REST client or t
 - the v3 REST API: donation and donor lists, donor statistics (`givewp/v3/*`)
 - campaign totals and goals: `CampaignsDataQuery`, `CampaignDonationQuery`, the 12-campaign grid
 - form totals: `give_goal_progress_stats()` and the async column helpers for 20 forms
-- reports and statistics: the reports Income route, `Give_Payment_Stats`, `DonorStatisticsQuery`
+- reports and statistics: the reports Income route over the past week, which is what the Reports
+  screen opens on, `Give_Payment_Stats` over a year, `DonorStatisticsQuery`
 - writes: creating a donation and saving a status change, with the number of meta rows one
   donation writes
 
@@ -21,7 +22,9 @@ Lists are read in the site's current donation mode (test or live), the same way 
 read them, and any GiveWP migration still owed runs before measuring starts.
 
 Each workload runs once to warm up and then three times. The result records the median time, the
-peak PHP memory and the database queries of one run. Caches (`give_campaigns_data`, transients,
+peak PHP memory and the database queries of one run. A workload whose warm-up takes over a minute
+is recorded from that single run and marked as such, so one pathological code path cannot turn a
+benchmark into an overnight job. Caches (`give_campaigns_data`, transients,
 `Give_Cache`, the object cache) are cleared before the workloads that have one, so totals and
 goals are measured uncached. Donations the write workloads create are deleted again at the end.
 

@@ -126,9 +126,10 @@ class Core
     {
         $clearCaches = [$bench, 'clearCaches'];
 
-        $bench->measure('reports_income_1y_uncached', static function () use ($bench) {
+        // The Reports screen opens on the past week; that is the request every visit makes.
+        $bench->measure('reports_income_7d_uncached', static function () use ($bench) {
             $bench->rest('/give-api/v2/reports/income', [
-                'start' => $bench->yearAgo->format('Y-m-d'),
+                'start' => $bench->weekAgo->format('Y-m-d'),
                 'end' => $bench->now->format('Y-m-d'),
                 'currency' => give_get_currency(),
                 'testMode' => give_is_test_mode(),

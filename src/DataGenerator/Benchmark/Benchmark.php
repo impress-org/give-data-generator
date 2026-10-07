@@ -17,6 +17,7 @@ use WP_REST_Request;
  * Every workload goes through the real code path an admin screen, REST client or template would
  * use. Each runs once to warm up and then three times; the median is kept, along with peak PHP
  * memory (per run on PHP 8.2+, cumulative before that) and the database queries one run makes.
+ * A workload slower than {@see BUDGET_MS} on its warm-up is recorded from that run alone.
  * Workload classes register themselves through {@see measure()}; add one to {@see WORKLOADS} to
  * include it, and have it bail when the plugin it measures is not active.
  *
@@ -45,6 +46,8 @@ class Benchmark
     public $lastPage;
     /** @var int */
     public $totalDonations;
+    /** @var DateTime */
+    public $weekAgo;
     /** @var DateTime */
     public $yearAgo;
     /** @var DateTime */
@@ -91,6 +94,7 @@ class Benchmark
         if (!$this->donor) {
             throw new RuntimeException('The most recent donation has no donor. Generate data first: wp give-data donations 100000 --campaigns=50');
         }
+        $this->weekAgo = new DateTime('-7 days');
         $this->yearAgo = new DateTime('-1 year');
         $this->now = new DateTime();
     }
@@ -141,8 +145,15 @@ class Benchmark
     }
 
     /**
-     * Times a workload: one warm-up, then three runs with $setup before each. A workload may
-     * return an array of extra figures to record alongside the timing, such as rows written.
+     * A workload whose warm-up run takes longer than this is measured by that one run alone, so
+     * a pathological code path costs the benchmark minutes rather than hours.
+     */
+    const BUDGET_MS = 60000;
+
+    /**
+     * Times a workload: one warm-up, then three runs with $setup before each, keeping the median.
+     * A workload may return an array of extra figures to record alongside the timing, such as
+     * rows written.
      *
      * @since 1.2.0
      */
@@ -153,16 +164,9 @@ class Benchmark
         if ($this->onWorkload) {
             ($this->onWorkload)($name);
         }
-        if ($setup) {
-            $setup();
-        }
-        $workload();
 
-        $times = [];
-        $peak = 0;
-        $queries = 0;
-        $extra = [];
-        for ($i = 0; $i < 3; $i++) {
+        $runs = [];
+        for ($i = 0; $i < 4; $i++) {
             if ($setup) {
                 $setup();
             }
@@ -172,23 +176,30 @@ class Benchmark
             $queriesBefore = $wpdb->num_queries;
             $start = microtime(true);
             $returned = $workload();
-            $times[] = (microtime(true) - $start) * 1000;
-            $queries = $wpdb->num_queries - $queriesBefore;
-            $peak = max($peak, memory_get_peak_usage());
-            if (is_array($returned)) {
-                $extra = $returned;
+            $runs[] = [
+                'ms' => (microtime(true) - $start) * 1000,
+                'peak' => memory_get_peak_usage(),
+                'queries' => $wpdb->num_queries - $queriesBefore,
+                'extra' => is_array($returned) ? $returned : [],
+            ];
+            if ($i === 0 && $runs[0]['ms'] > self::BUDGET_MS) {
+                break;
             }
         }
+
+        $capped = count($runs) === 1;
+        $timed = $capped ? $runs : array_slice($runs, 1);
+        $times = array_column($timed, 'ms');
         sort($times);
 
         $this->results[$name] = array_merge([
-            'ms' => round($times[1], 1),
+            'ms' => round($times[intdiv(count($times), 2)], 1),
             'runs_ms' => array_map(static function ($time) {
                 return round($time, 1);
             }, $times),
-            'peak_mb' => round($peak / 1048576, 1),
-            'queries' => $queries,
-        ], $extra);
+            'peak_mb' => round(max(array_column($timed, 'peak')) / 1048576, 1),
+            'queries' => end($timed)['queries'],
+        ], $capped ? ['capped' => true] : [], end($timed)['extra']);
     }
 
     /**
