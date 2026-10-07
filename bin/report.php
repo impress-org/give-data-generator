@@ -272,7 +272,7 @@ $html = <<<HTML
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GiveWP benchmark</title>
+<title>Give benchmark</title>
 <style>
 :root { --surface: #fcfcfb; --page: #f9f9f7; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781; --grid: #e1e0d9; --axis: #c3c2b7; --tip: #ffffff; }
 .dot, .swatch { --dot: var(--c); }
@@ -321,7 +321,7 @@ small { color: var(--muted); }
 </head>
 <body>
 <main>
-<h1>GiveWP benchmark</h1>
+<h1>Give benchmark</h1>
 <p class="sub">Everyday workloads timed through their real code paths with <code>wp give-data bench</code>. Each dot is one saved run; hover or focus a dot for its figures.</p>
 {$legend}
 {$timeChart}

@@ -72,7 +72,7 @@ class Report
     private static function heading(array $run): string
     {
         return sprintf(
-            '%s  %s donations, %d campaigns  GiveWP %s  storage %s  %s  pool %d MB  PHP %s',
+            '%s  %s donations, %d campaigns  Give %s  storage %s  %s  pool %d MB  PHP %s',
             $run['label'],
             number_format($run['donations']),
             $run['campaigns'],

@@ -201,9 +201,16 @@ read them. Any GiveWP migration still owed runs before measuring starts. Caches
 workloads that have one, so totals and goals are measured uncached. Donations the write workloads
 create are deleted again at the end.
 
-The workloads live in `src/DataGenerator/Benchmark/Workloads/`. `Core.php` is GiveWP's. An add-on
-such as Peer-to-Peer gets a class of its own there, listed in `Benchmark::WORKLOADS`, that returns
-early when the add-on is not active. Prefix its workload names with the add-on's slug.
+The workloads live in `src/DataGenerator/Benchmark/Workloads/`. `Core.php` is Give's. An add-on
+such as Peer-to-Peer gets a class of its own there with the same `register()` method, added in
+`Give\Adapter::benchmark()` when the add-on is active. Prefix its workload names with the add-on's
+slug.
+
+The runner itself (`Benchmark.php`, `Report.php`, the two scripts in `bin/`) knows nothing about
+Give. Everything Give-specific sits in `src/DataGenerator/Benchmark/Give/`: the fixtures the
+workloads point at, how to clear Give's caches, and the dataset counts a result records. Another
+product would supply a directory like that and its own workloads, which is the shape a shared
+library would take if one is ever extracted.
 
 ## Commands
 

@@ -14,15 +14,27 @@ use Give\Framework\Support\ValueObjects\Money;
 use Give\PaymentGateways\Gateways\TestGateway\TestGateway;
 use Give_Payment_Stats;
 use GiveDataGenerator\DataGenerator\Benchmark\Benchmark;
+use GiveDataGenerator\DataGenerator\Benchmark\Give\Fixtures;
 
 /**
- * GiveWP core's workloads: the admin list screens, the v3 REST API, campaign and form totals,
+ * Give core's workloads: the admin list screens, the v3 REST API, campaign and form totals,
  * reports and statistics, and a donation write.
  *
  * @since 1.2.0
  */
 class Core
 {
+    /** @var Fixtures */
+    private $f;
+
+    /**
+     * @since 1.2.0
+     */
+    public function __construct(Fixtures $fixtures)
+    {
+        $this->f = $fixtures;
+    }
+
     /**
      * @since 1.2.0
      */
@@ -40,26 +52,27 @@ class Core
      */
     private function adminScreens(Benchmark $bench): void
     {
-        $bench->measure('donations_screen_page1', static function () use ($bench) {
+        $f = $this->f;
+        $bench->measure('donations_screen_page1', static function () use ($bench, $f) {
             $bench->rest('/give-api/v2/admin/donations', ['page' => 1, 'perPage' => 30]);
         });
-        $bench->measure('donations_screen_lastpage', static function () use ($bench) {
-            $bench->rest('/give-api/v2/admin/donations', ['page' => $bench->lastPage, 'perPage' => 30]);
+        $bench->measure('donations_screen_lastpage', static function () use ($bench, $f) {
+            $bench->rest('/give-api/v2/admin/donations', ['page' => $f->lastPage, 'perPage' => 30]);
         });
-        $bench->measure('donations_screen_search_email', static function () use ($bench) {
-            $bench->rest('/give-api/v2/admin/donations', ['page' => 1, 'perPage' => 30, 'search' => $bench->donor->email]);
+        $bench->measure('donations_screen_search_email', static function () use ($bench, $f) {
+            $bench->rest('/give-api/v2/admin/donations', ['page' => 1, 'perPage' => 30, 'search' => $f->donor->email]);
         });
-        $bench->measure('donations_screen_stats', static function () use ($bench) {
+        $bench->measure('donations_screen_stats', static function () use ($bench, $f) {
             $bench->rest('/give-api/v2/admin/donations/stats');
         });
-        $bench->measure('donors_screen_page1', static function () use ($bench) {
+        $bench->measure('donors_screen_page1', static function () use ($bench, $f) {
             $bench->rest('/give-api/v2/admin/donors', ['page' => 1, 'perPage' => 30]);
         });
-        $bench->measure('donors_screen_search_email', static function () use ($bench) {
-            $bench->rest('/give-api/v2/admin/donors', ['page' => 1, 'perPage' => 30, 'search' => $bench->donor->email]);
+        $bench->measure('donors_screen_search_email', static function () use ($bench, $f) {
+            $bench->rest('/give-api/v2/admin/donors', ['page' => 1, 'perPage' => 30, 'search' => $f->donor->email]);
         });
         // The Campaigns screen reads totals from the campaigns data cache, which is how a site has it.
-        $bench->measure('campaigns_screen_page1', static function () use ($bench) {
+        $bench->measure('campaigns_screen_page1', static function () use ($bench, $f) {
             $bench->rest('/givewp/v3/campaigns/list-table', ['page' => 1, 'perPage' => 30]);
         });
     }
@@ -70,26 +83,27 @@ class Core
      */
     private function restApi(Benchmark $bench): void
     {
+        $f = $this->f;
         $mode = give_is_test_mode() ? 'test' : 'live';
 
-        $bench->measure('donations_api_v3_page1', static function () use ($bench, $mode) {
+        $bench->measure('donations_api_v3_page1', static function () use ($bench, $f, $mode) {
             $bench->rest('/givewp/v3/donations', ['page' => 1, 'per_page' => 30, 'mode' => $mode]);
         });
-        $bench->measure('donors_api_v3_page1', static function () use ($bench, $mode) {
+        $bench->measure('donors_api_v3_page1', static function () use ($bench, $f, $mode) {
             $bench->rest('/givewp/v3/donors', ['page' => 1, 'per_page' => 30, 'onlyWithDonations' => true, 'mode' => $mode]);
         });
-        $bench->measure('donor_api_v3_statistics', static function () use ($bench) {
-            $bench->rest('/givewp/v3/donors/' . $bench->donor->id . '/statistics');
+        $bench->measure('donor_api_v3_statistics', static function () use ($bench, $f) {
+            $bench->rest('/givewp/v3/donors/' . $f->donor->id . '/statistics');
         });
-        $bench->measure('campaigns_api_v3_page1', static function () use ($bench) {
+        $bench->measure('campaigns_api_v3_page1', static function () use ($bench, $f) {
             $bench->rest('/givewp/v3/campaigns', ['page' => 1, 'per_page' => 30]);
         });
         // The two requests the campaign details screen makes for its header and chart.
-        $bench->measure('campaign_api_v3_statistics', static function () use ($bench) {
-            $bench->rest('/givewp/v3/campaigns/' . $bench->campaign->id . '/statistics');
+        $bench->measure('campaign_api_v3_statistics', static function () use ($bench, $f) {
+            $bench->rest('/givewp/v3/campaigns/' . $f->campaign->id . '/statistics');
         });
-        $bench->measure('campaign_api_v3_revenue', static function () use ($bench) {
-            $bench->rest('/givewp/v3/campaigns/' . $bench->campaign->id . '/revenue');
+        $bench->measure('campaign_api_v3_revenue', static function () use ($bench, $f) {
+            $bench->rest('/givewp/v3/campaigns/' . $f->campaign->id . '/revenue');
         });
     }
 
@@ -98,34 +112,35 @@ class Core
      */
     private function totals(Benchmark $bench): void
     {
+        $f = $this->f;
         $clearCaches = [$bench, 'clearCaches'];
 
-        $bench->measure('campaigns_data_all_uncached', static function () use ($bench) {
-            $donations = CampaignsDataQuery::donations($bench->campaignIds);
+        $bench->measure('campaigns_data_all_uncached', static function () use ($bench, $f) {
+            $donations = CampaignsDataQuery::donations($f->campaignIds);
             $donations->collectIntendedAmounts();
             $donations->collectDonations();
             $donations->collectDonors();
-            $subscriptions = CampaignsDataQuery::subscriptions($bench->campaignIds);
+            $subscriptions = CampaignsDataQuery::subscriptions($f->campaignIds);
             $subscriptions->collectInitialAmounts();
             $subscriptions->collectDonations();
             $subscriptions->collectDonors();
         }, $clearCaches);
-        $bench->measure('campaign_grid_12_uncached', static function () use ($bench) {
-            foreach (array_slice($bench->campaigns, 0, 12) as $campaign) {
+        $bench->measure('campaign_grid_12_uncached', static function () use ($bench, $f) {
+            foreach (array_slice($f->campaigns, 0, 12) as $campaign) {
                 $query = new CampaignDonationQuery($campaign);
                 $query->sumIntendedAmount();
                 $query->countDonations();
                 $query->countDonors();
             }
         }, $clearCaches);
-        $bench->measure('campaign_sum_intended', static function () use ($bench) {
-            (new CampaignDonationQuery($bench->campaign))->sumIntendedAmount();
+        $bench->measure('campaign_sum_intended', static function () use ($bench, $f) {
+            (new CampaignDonationQuery($f->campaign))->sumIntendedAmount();
         });
-        $bench->measure('campaign_by_day_1y', static function () use ($bench) {
-            (new CampaignDonationQuery($bench->campaign))->between($bench->yearAgo, $bench->now)->getDonationsByDate('DAY');
+        $bench->measure('campaign_by_day_1y', static function () use ($bench, $f) {
+            (new CampaignDonationQuery($f->campaign))->between($f->yearAgo, $f->now)->getDonationsByDate('DAY');
         });
-        $bench->measure('forms_list_20_uncached', static function () use ($bench) {
-            foreach ($bench->formIds as $formId) {
+        $bench->measure('forms_list_20_uncached', static function () use ($bench, $f) {
+            foreach ($f->formIds as $formId) {
                 give_goal_progress_stats($formId);
                 AsyncDataHelpers::getFormDonationsCountValue($formId);
                 AsyncDataHelpers::getFormRevenueValue($formId);
@@ -138,22 +153,23 @@ class Core
      */
     private function reports(Benchmark $bench): void
     {
+        $f = $this->f;
         $clearCaches = [$bench, 'clearCaches'];
 
         // The Reports screen opens on the past week; that is the request every visit makes.
-        $bench->measure('reports_income_7d_uncached', static function () use ($bench) {
+        $bench->measure('reports_income_7d_uncached', static function () use ($bench, $f) {
             $bench->rest('/give-api/v2/reports/income', [
-                'start' => $bench->weekAgo->format('Y-m-d'),
-                'end' => $bench->now->format('Y-m-d'),
+                'start' => $f->weekAgo->format('Y-m-d'),
+                'end' => $f->now->format('Y-m-d'),
                 'currency' => give_get_currency(),
                 'testMode' => give_is_test_mode(),
             ]);
         }, $clearCaches);
-        $bench->measure('legacy_stats_earnings_1y_uncached', static function () use ($bench) {
-            (new Give_Payment_Stats())->get_earnings(0, $bench->yearAgo->getTimestamp(), $bench->now->getTimestamp());
+        $bench->measure('legacy_stats_earnings_1y_uncached', static function () use ($bench, $f) {
+            (new Give_Payment_Stats())->get_earnings(0, $f->yearAgo->getTimestamp(), $f->now->getTimestamp());
         }, $clearCaches);
-        $bench->measure('donor_statistics_query', static function () use ($bench) {
-            $query = new DonorStatisticsQuery($bench->donor);
+        $bench->measure('donor_statistics_query', static function () use ($bench, $f) {
+            $query = new DonorStatisticsQuery($f->donor);
             $query->getLifetimeDonationsAmount();
             $query->getAverageDonationAmount();
             $query->getDonationsCount();
@@ -165,22 +181,23 @@ class Core
      */
     private function writes(Benchmark $bench): void
     {
+        $f = $this->f;
         global $wpdb;
 
         $created = [];
-        $newDonation = static function () use ($bench, &$created): Donation {
-            $form = $bench->campaign->defaultForm();
+        $newDonation = static function () use ($f, &$created): Donation {
+            $form = $f->campaign->defaultForm();
             $donation = Donation::create([
                 'status' => DonationStatus::COMPLETE(),
                 'gatewayId' => TestGateway::id(),
                 'mode' => DonationMode::TEST(),
                 'type' => DonationType::SINGLE(),
                 'amount' => new Money(2500, give_get_currency()),
-                'donorId' => $bench->donor->id,
-                'firstName' => $bench->donor->firstName,
-                'lastName' => $bench->donor->lastName,
-                'email' => $bench->donor->email,
-                'campaignId' => $bench->campaign->id,
+                'donorId' => $f->donor->id,
+                'firstName' => $f->donor->firstName,
+                'lastName' => $f->donor->lastName,
+                'email' => $f->donor->email,
+                'campaignId' => $f->campaign->id,
                 'formId' => $form ? $form->id : 0,
                 'formTitle' => $form ? $form->title : '',
             ]);

@@ -37,7 +37,9 @@ holds the feature itself. Domain code never depends on `src/Addon/`.
 | `src/DataGenerator/BulkDonationSeeder.php` | donations at scale for the CLI: suspends email and the per-donation cache job, rebuilds totals once at the end, tags what it wrote |
 | `src/DataGenerator/CleanUpManager.php` | the Clean up tab |
 | `src/DataGenerator/Cli/GiveDataCommand.php` | `wp give-data`: `donations`, `reset`, `pages`, `bench`, `snapshot`, `restore` |
-| `src/DataGenerator/Benchmark/` | the benchmark runner, its workloads, and the text report; see [benchmarking.md](benchmarking.md) |
+| `src/DataGenerator/Benchmark/Benchmark.php`, `Report.php` | the benchmark runner and text report; product-agnostic, nothing in them knows about Give |
+| `src/DataGenerator/Benchmark/Give/` | what the runner needs from Give: fixtures to point workloads at, cache clearing, dataset counts, which workloads to run |
+| `src/DataGenerator/Benchmark/Workloads/` | the workloads themselves, `Core.php` for Give; see [benchmarking.md](benchmarking.md) |
 | `bin/` | host-side scripts: `compare.php`, `report.php` |
 | `benchmarks/results/` | saved benchmark runs and the generated `report.html` |
 | `src/DataGenerator/ServiceProvider.php` | registers the generators with GiveWP's container and the hooks and CLI command |

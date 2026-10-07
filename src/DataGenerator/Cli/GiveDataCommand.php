@@ -4,7 +4,7 @@ namespace GiveDataGenerator\DataGenerator\Cli;
 
 use Exception;
 use Give\Campaigns\Models\Campaign;
-use GiveDataGenerator\DataGenerator\Benchmark\Benchmark;
+use GiveDataGenerator\DataGenerator\Benchmark\Give\Adapter;
 use GiveDataGenerator\DataGenerator\Benchmark\Report;
 use GiveDataGenerator\DataGenerator\BulkDonationSeeder;
 use GiveDataGenerator\DataGenerator\PageGenerator;
@@ -149,10 +149,10 @@ class GiveDataCommand
         }
 
         try {
-            $benchmark = new Benchmark(static function (string $name) {
+            $give = new Adapter();
+            $result = $give->benchmark(static function (string $name) {
                 WP_CLI::log('  ' . $name);
-            });
-            $result = $benchmark->run($label, $storage);
+            })->run($label, $storage, $give->dataset());
         } catch (Exception $e) {
             WP_CLI::error($e->getMessage());
         }
