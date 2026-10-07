@@ -113,6 +113,8 @@ class Benchmark
         add_filter('pre_wp_mail', '__return_true');
         // A fresh site may still owe GiveWP's migrations, the donation meta indexes among them.
         give(MigrationsRunner::class)->run();
+        // Generating data in this same process fills the object cache; start every workload from the same empty one.
+        wp_cache_flush();
 
         foreach (self::WORKLOADS as $workloads) {
             (new $workloads())->register($this);
