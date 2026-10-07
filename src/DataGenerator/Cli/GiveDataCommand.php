@@ -235,6 +235,8 @@ class GiveDataCommand
         WP_CLI::confirm("Replace every table on this site with $source?", $assocArgs);
         $started = microtime(true);
         $home = get_option('home');
+        // The dump names the plugins of the site it came from, by directory; this site keeps its own.
+        $activePlugins = get_option('active_plugins');
 
         WP_CLI::log('Unpacking...');
         // db import reads the extension, so the dump needs a .sql name; drop the empty file tempnam made.
@@ -252,8 +254,10 @@ class GiveDataCommand
         $this->runInProcess('db import ' . escapeshellarg($sql));
         unlink($sql);
 
-        // wp-env pins the URL with WP_HOME and WP_SITEURL; elsewhere the dump's URL has to be rewritten.
         wp_cache_flush();
+        update_option('active_plugins', $activePlugins);
+
+        // wp-env pins the URL with WP_HOME and WP_SITEURL; elsewhere the dump's URL has to be rewritten.
         $restoredHome = get_option('home');
         if ($restoredHome !== $home) {
             WP_CLI::log("Rewriting $restoredHome to $home...");
