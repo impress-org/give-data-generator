@@ -275,7 +275,7 @@ class GiveDataCommand
     }
 
     /**
-     * Copies one file into another in chunks. A compress.zlib:// path gzips or gunzips as it goes,
+     * Copies one file into another. A compress.zlib:// path gzips or gunzips as it goes,
      * and works for URLs too, so this is both the snapshot's compressor and the restore's downloader.
      *
      * @since 1.2.0
@@ -290,13 +290,11 @@ class GiveDataCommand
         if (!$out) {
             WP_CLI::error("Could not write $to.");
         }
-        while (!feof($in)) {
-            if (fwrite($out, fread($in, 1048576)) === false) {
-                WP_CLI::error("Could not write $to.");
-            }
+        // stream_copy_to_stream retries short writes itself and only returns false when the copy failed.
+        if (stream_copy_to_stream($in, $out) === false || !fclose($out)) {
+            WP_CLI::error("Could not write $to.");
         }
         fclose($in);
-        fclose($out);
     }
 
     /**

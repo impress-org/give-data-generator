@@ -255,8 +255,14 @@ npx @wordpress/env start --xdebug=profile
 
 Every request then writes a cachegrind file into the container's `/tmp`, which PhpStorm
 (Tools > Analyze Xdebug Profiler Snapshot) or qcachegrind opens as a call tree with time per
-function. For repeated queries, `define('SAVEQUERIES', true)` in `.wp-env.override.json` and dump
-`$wpdb->queries` after the workload, or install Query Monitor and load the screen in the browser.
+function. For repeated queries, turn on query logging in `.wp-env.override.json`:
+
+```json
+{ "config": { "SAVEQUERIES": true } }
+```
+
+then dump `$wpdb->queries` after the workload, or install Query Monitor and load the screen in
+the browser.
 
 A stock wp-env has MariaDB's 128 MB default buffer pool, far below what a host gives a site of this
 size. To measure with a larger pool, raise it before the run; the value is recorded in the result
