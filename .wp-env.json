@@ -1,0 +1,10 @@
+{
+    "plugins": ["https://downloads.wordpress.org/plugin/give.latest-stable.zip", "."],
+    "port": 8891,
+    "testsEnvironment": false,
+    "config": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_LOG": true,
+        "WP_DEBUG_DISPLAY": false
+    }
+}

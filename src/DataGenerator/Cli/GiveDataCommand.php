@@ -4,14 +4,17 @@ namespace GiveDataGenerator\DataGenerator\Cli;
 
 use Exception;
 use Give\Campaigns\Models\Campaign;
+use GiveDataGenerator\DataGenerator\Benchmark\Give\Adapter;
+use GiveDataGenerator\DataGenerator\Benchmark\Report;
 use GiveDataGenerator\DataGenerator\BulkDonationSeeder;
 use GiveDataGenerator\DataGenerator\PageGenerator;
 use WP_CLI;
 use WP_CLI\Utils;
 
 /**
- * Generate GiveWP test data at scale from the command line.
+ * Generate GiveWP test data at scale from the command line, and benchmark the site it produced.
  *
+ * @since 1.2.0 Add the bench subcommand.
  * @since 1.1.0
  */
 class GiveDataCommand
@@ -69,6 +72,238 @@ class GiveDataCommand
         $mode = Utils\get_flag_value($assocArgs, 'mode', 'test');
         $status = Utils\get_flag_value($assocArgs, 'status', 'random');
 
+        $started = microtime(true);
+        $seeder = $this->seed($count, $campaignCount, $donorTarget, $mode, $status);
+
+        WP_CLI::success(sprintf(
+            'Site now holds %s donations and %s donors across %d campaigns (%ds).',
+            number_format($seeder->countDonations()),
+            number_format($seeder->countDonors()),
+            $campaignCount,
+            round(microtime(true) - $started)
+        ));
+    }
+
+    /**
+     * Time GiveWP's everyday workloads on this site and save the numbers for comparison.
+     *
+     * Every workload runs through the real code path an admin screen, REST client or template
+     * uses: the Donations and Donors list endpoints, the v3 REST API, campaign and form totals
+     * with caches cleared, reports, and a donation save. Each runs once to warm up and then three
+     * times; the median, peak PHP memory and query count are recorded along with the date, GiveWP
+     * version, storage in use, database version and InnoDB buffer pool size.
+     *
+     * ## OPTIONS
+     *
+     * <label>
+     * : A name for this run, such as the dataset size: 100k, 400k, 1m.
+     *
+     * [--donations=<count>]
+     * : Top the site up to this many donations across 50 campaigns before measuring.
+     *
+     * [--storage=<storage>]
+     * : Donation storage the site is using, recorded in the result.
+     * ---
+     * default: legacy
+     * options:
+     *   - legacy
+     *   - new
+     * ---
+     *
+     * [--save[=<dir>]]
+     * : Write the result as JSON into this directory, named <label>-<storage>-<date>-<version>.json.
+     * Without a value it goes into the plugin's own benchmarks/results directory.
+     *
+     * [--format=<format>]
+     * : What to print.
+     * ---
+     * default: table
+     * options:
+     *   - table
+     *   - json
+     * ---
+     *
+     * ## EXAMPLES
+     *
+     *     wp give-data bench 1m --donations=1000000 --save
+     *     wp give-data bench after-fix --format=json > after.json
+     *
+     * @since 1.2.0
+     *
+     * @subcommand bench
+     */
+    public function bench(array $args, array $assocArgs): void
+    {
+        $label = $args[0];
+        $target = (int)Utils\get_flag_value($assocArgs, 'donations', 0);
+        $storage = Utils\get_flag_value($assocArgs, 'storage', 'legacy');
+        $save = Utils\get_flag_value($assocArgs, 'save', false);
+        $format = Utils\get_flag_value($assocArgs, 'format', 'table');
+
+        if ($target > 0) {
+            $current = give(BulkDonationSeeder::class)->countDonations();
+            if ($current < $target) {
+                WP_CLI::log(sprintf('Site has %s donations; adding %s...', number_format($current), number_format($target - $current)));
+                $this->seed($target - $current, 50, intdiv($target, 10), 'test', 'random');
+            }
+        }
+
+        try {
+            $give = new Adapter();
+            $result = $give->benchmark(static function (string $name) {
+                WP_CLI::log('  ' . $name);
+            })->run($label, $storage, $give->dataset());
+        } catch (Exception $e) {
+            WP_CLI::error($e->getMessage());
+        }
+
+        if ($save !== false) {
+            $dir = $save === true ? GIVE_DATA_GENERATOR_DIR . 'benchmarks/results' : $save;
+            if (!wp_mkdir_p($dir)) {
+                WP_CLI::error("Could not create $dir.");
+            }
+            $file = sprintf('%s/%s-%s-%s-%s.json', rtrim($dir, '/'), $label, $storage, gmdate('Ymd'), GIVE_VERSION);
+            file_put_contents($file, json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+            WP_CLI::log("Saved $file");
+        }
+
+        WP_CLI::line($format === 'json' ? json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : Report::table($result));
+    }
+
+    /**
+     * Save the whole database as a gzipped SQL dump, so a dataset can be restored instead of generated again.
+     *
+     * ## OPTIONS
+     *
+     * <label>
+     * : A name for the dataset, such as 100k, 400k or 1m. The file is <label>-givewp-<version>.sql.gz.
+     *
+     * [--dir=<dir>]
+     * : Where to write it. Defaults to the plugin's own benchmarks/snapshots directory.
+     *
+     * ## EXAMPLES
+     *
+     *     wp give-data snapshot 1m
+     *
+     * @since 1.2.0
+     *
+     * @subcommand snapshot
+     */
+    public function snapshot(array $args, array $assocArgs): void
+    {
+        $dir = rtrim(Utils\get_flag_value($assocArgs, 'dir', GIVE_DATA_GENERATOR_DIR . 'benchmarks/snapshots'), '/');
+        if (!wp_mkdir_p($dir)) {
+            WP_CLI::error("Could not create $dir.");
+        }
+        $file = sprintf('%s/%s-givewp-%s.sql.gz', $dir, $args[0], GIVE_VERSION);
+        $sql = $file . '.tmp.sql';
+        $started = microtime(true);
+
+        WP_CLI::log('Exporting the database...');
+        $this->runInProcess('db export ' . escapeshellarg($sql) . ' --add-drop-table --single-transaction --quick');
+
+        WP_CLI::log('Compressing...');
+        $this->copyStream($sql, 'compress.zlib://' . $file);
+        unlink($sql);
+
+        WP_CLI::success(sprintf('Saved %s (%s, %ds).', $file, size_format(filesize($file)), round(microtime(true) - $started)));
+    }
+
+    /**
+     * Replace the database with a snapshot taken by `wp give-data snapshot`. Everything on the site is replaced.
+     *
+     * ## OPTIONS
+     *
+     * <source>
+     * : Path or URL of a .sql.gz snapshot.
+     *
+     * [--yes]
+     * : Skip the confirmation prompt.
+     *
+     * ## EXAMPLES
+     *
+     *     wp give-data restore benchmarks/snapshots/1m-givewp-4.18.0.sql.gz
+     *     wp give-data restore https://github.com/impress-org/give-data-generator/releases/download/datasets/1m-givewp-4.18.0.sql.gz
+     *
+     * @since 1.2.0
+     *
+     * @subcommand restore
+     */
+    public function restore(array $args, array $assocArgs): void
+    {
+        $source = $args[0];
+        WP_CLI::confirm("Replace every table on this site with $source?", $assocArgs);
+        $started = microtime(true);
+        $home = get_option('home');
+        // The dump names the plugins of the site it came from, by directory; this site keeps its own.
+        $activePlugins = get_option('active_plugins');
+
+        WP_CLI::log('Unpacking...');
+        // db import reads the extension, so the dump needs a .sql name; drop the empty file tempnam made.
+        $tmp = tempnam(get_temp_dir(), 'give-restore-');
+        $sql = $tmp . '.sql';
+        unlink($tmp);
+        $this->copyStream('compress.zlib://' . $source, $sql);
+
+        WP_CLI::log('Importing...');
+        $this->runInProcess('db reset --yes');
+        $this->runInProcess('db import ' . escapeshellarg($sql));
+        unlink($sql);
+
+        wp_cache_flush();
+        update_option('active_plugins', $activePlugins);
+
+        // wp-env pins the URL with WP_HOME and WP_SITEURL; elsewhere the dump's URL has to be rewritten.
+        $restoredHome = get_option('home');
+        if ($restoredHome !== $home) {
+            WP_CLI::log("Rewriting $restoredHome to $home...");
+            $this->runInProcess(sprintf('search-replace %s %s --all-tables --skip-columns=guid --quiet', escapeshellarg($restoredHome), escapeshellarg($home)));
+        }
+
+        WP_CLI::success(sprintf('Restored %s (%ds).', $source, round(microtime(true) - $started)));
+    }
+
+    /**
+     * Runs another WP-CLI command in this process. A child process would start without the
+     * container's environment, and wp-env's wp-config reads the database credentials from it.
+     *
+     * @since 1.2.0
+     */
+    private function runInProcess(string $command): void
+    {
+        WP_CLI::runcommand($command, ['launch' => false, 'exit_error' => true]);
+    }
+
+    /**
+     * Copies one file into another. A compress.zlib:// path gzips or gunzips as it goes,
+     * and works for URLs too, so this is both the snapshot's compressor and the restore's downloader.
+     *
+     * @since 1.2.0
+     */
+    private function copyStream(string $from, string $to): void
+    {
+        $in = @fopen($from, 'rb');
+        if (!$in) {
+            WP_CLI::error("Could not open $from.");
+        }
+        $out = @fopen($to, 'wb');
+        if (!$out) {
+            WP_CLI::error("Could not write $to.");
+        }
+        // stream_copy_to_stream retries short writes itself and only returns false when the copy failed.
+        if (stream_copy_to_stream($in, $out) === false || !fclose($out)) {
+            WP_CLI::error("Could not write $to.");
+        }
+        fclose($in);
+    }
+
+    /**
+     * Ensures the campaigns exist, then adds donations, logging progress as it goes.
+     *
+     * @since 1.2.0
+     */
+    private function seed(int $count, int $campaignCount, int $donorTarget, string $mode, string $status): BulkDonationSeeder
+    {
         /** @var BulkDonationSeeder $seeder */
         $seeder = give(BulkDonationSeeder::class);
         $started = microtime(true);
@@ -106,13 +341,7 @@ class GiveDataCommand
             WP_CLI::error($e->getMessage());
         }
 
-        WP_CLI::success(sprintf(
-            'Site now holds %s donations and %s donors across %d campaigns (%ds).',
-            number_format($seeder->countDonations()),
-            number_format($seeder->countDonors()),
-            count($campaigns),
-            round(microtime(true) - $started)
-        ));
+        return $seeder;
     }
 
     /**

@@ -11,9 +11,17 @@ import {
     TextControl,
 } from '@wordpress/components';
 
+type Option = { label: string; value: string };
+
 const DEFAULTS = { campaigns: '10', mode: 'test', status: 'random' };
 
-type Option = { label: string; value: string };
+// Database dumps on this repository's "datasets" release. Regenerate and re-upload them together; see docs/benchmarking.md.
+const DATASETS_URL = 'https://github.com/impress-org/give-data-generator/releases/download/datasets/';
+const DATASETS: Option[] = [
+    { label: __('100,000 donations (32 MB, under a minute)', 'give-data-generator'), value: '100k-givewp-4.18.0.sql.gz' },
+    { label: __('400,000 donations (127 MB, about 2 minutes)', 'give-data-generator'), value: '400k-givewp-4.18.0.sql.gz' },
+    { label: __('1,000,000 donations (318 MB, about 4 minutes)', 'give-data-generator'), value: '1m-givewp-4.18.0.sql.gz' },
+];
 
 const MODES: Option[] = [
     { label: __('Test', 'give-data-generator'), value: 'test' },
@@ -71,6 +79,7 @@ const WpCliTab: React.FC = () => {
     const [mode, setMode] = useState(DEFAULTS.mode);
     const [status, setStatus] = useState(DEFAULTS.status);
     const [yes, setYes] = useState(true);
+    const [dataset, setDataset] = useState(DATASETS[2].value);
 
     // Only flags that differ from the command's defaults are printed.
     const donationsCommand = [
@@ -84,7 +93,10 @@ const WpCliTab: React.FC = () => {
 
     const resetCommand = `wp give-data reset${yes ? ' --yes' : ''}`;
 
-    const minutes = Math.round((parseInt(count, 10) || 0) / 100000 * 2.5);
+    const minutes = Math.round((parseInt(count, 10) || 0) / 100000 * 15);
+
+    const restoreCommand = `wp give-data restore ${DATASETS_URL}${dataset} --yes`;
+    const benchCommand = `wp give-data bench ${dataset.split('-')[0]} --save`;
 
     return (
         <>
@@ -137,6 +149,28 @@ const WpCliTab: React.FC = () => {
                     <p className="description">
                         {__('While generating, email and the per-donation campaign cache job are suspended. Everything that writes data still runs. Donor totals and campaign caches are rebuilt once at the end.', 'give-data-generator')}
                     </p>
+                </CardBody>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <h2>{__('Load a ready-made dataset', 'give-data-generator')}</h2>
+                </CardHeader>
+                <CardBody>
+                    <p className="description">
+                        {__('Generating a million donations takes hours; restoring the saved copy takes minutes. The dumps are whole WordPress databases, so this replaces every table on the site and keeps only the plugins that are active now. Run it on a throwaway site.', 'give-data-generator')}
+                    </p>
+                    <SelectControl
+                        label={__('Dataset', 'give-data-generator')}
+                        value={dataset}
+                        onChange={setDataset}
+                        options={DATASETS}
+                    />
+                    <CommandBlock command={restoreCommand} />
+                    <p className="description">
+                        {__('Then time GiveWP on it. The result lands in the plugin\'s benchmarks/results directory; see docs/benchmarking.md for how to read it.', 'give-data-generator')}
+                    </p>
+                    <CommandBlock command={benchCommand} />
                 </CardBody>
             </Card>
 

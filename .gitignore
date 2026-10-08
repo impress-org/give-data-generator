@@ -126,3 +126,6 @@ wp-content/plugins/
 # Local development
 local-config.php
 .htaccess
+
+# Database snapshots are release assets, not source
+benchmarks/snapshots/

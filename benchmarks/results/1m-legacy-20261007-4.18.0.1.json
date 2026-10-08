@@ -1,0 +1,319 @@
+{
+    "label": "1m",
+    "date": "2026-10-07T21:41:12+00:00",
+    "product": "Give",
+    "plugin_version": "4.18.0.1",
+    "generator_version": "1.1.0",
+    "storage": "legacy",
+    "donations": 1000000,
+    "campaigns": 50,
+    "db_version": "12.3.3-MariaDB-ubu2404",
+    "innodb_buffer_pool_mb": 128,
+    "php_version": "8.3.35",
+    "peak_memory_is_per_run": true,
+    "plugins": {
+        "give-data-generator-bench": "1.1.0",
+        "give.latest-stable": "4.18.0.1"
+    },
+    "workloads": {
+        "donations_screen_page1": {
+            "ms": 39964.9,
+            "stdev_ms": 223.3,
+            "stdev_pct": 0.6,
+            "first_ms": 50807.7,
+            "runs_ms": [
+                39785.2,
+                39964.9,
+                40229.1
+            ],
+            "peak_mb": 78.9,
+            "queries": 33
+        },
+        "donations_screen_lastpage": {
+            "ms": 42869.3,
+            "stdev_ms": 1050.4,
+            "stdev_pct": 2.5,
+            "first_ms": 50133.6,
+            "runs_ms": [
+                41956,
+                42869.3,
+                44051.1
+            ],
+            "peak_mb": 78.8,
+            "queries": 13
+        },
+        "donations_screen_search_email": {
+            "ms": 4.7,
+            "stdev_ms": 0.2,
+            "stdev_pct": 4.7,
+            "first_ms": 26.1,
+            "runs_ms": [
+                4.7,
+                4.7,
+                5.1
+            ],
+            "peak_mb": 79,
+            "queries": 11
+        },
+        "donations_screen_stats": {
+            "ms": 34331.8,
+            "stdev_ms": 298.6,
+            "stdev_pct": 0.9,
+            "first_ms": 33694.5,
+            "runs_ms": [
+                33852.8,
+                34331.8,
+                34401.4
+            ],
+            "peak_mb": 79,
+            "queries": 1
+        },
+        "donors_screen_page1": {
+            "ms": 22.1,
+            "stdev_ms": 0.6,
+            "stdev_pct": 2.5,
+            "first_ms": 78.2,
+            "runs_ms": [
+                21.4,
+                22.1,
+                22.4
+            ],
+            "peak_mb": 79.5,
+            "queries": 94
+        },
+        "donors_screen_search_email": {
+            "ms": 65.4,
+            "stdev_ms": 0.7,
+            "stdev_pct": 1.1,
+            "first_ms": 144.2,
+            "runs_ms": [
+                64.7,
+                65.4,
+                66.1
+            ],
+            "peak_mb": 78,
+            "queries": 7
+        },
+        "campaigns_screen_page1": {
+            "ms": 46080.5,
+            "stdev_ms": 621.5,
+            "stdev_pct": 1.3,
+            "first_ms": 45224.8,
+            "runs_ms": [
+                45986.7,
+                46080.5,
+                47107
+            ],
+            "peak_mb": 78.4,
+            "queries": 5
+        },
+        "donations_api_v3_page1": {
+            "ms": 52584.5,
+            "stdev_ms": 160.6,
+            "stdev_pct": 0.3,
+            "first_ms": 52630.2,
+            "runs_ms": [
+                52316.3,
+                52584.5,
+                52603.6
+            ],
+            "peak_mb": 82.6,
+            "queries": 152
+        },
+        "donors_api_v3_page1": {
+            "ms": 40385.2,
+            "stdev_ms": 276.3,
+            "stdev_pct": 0.7,
+            "first_ms": 41061.5,
+            "runs_ms": [
+                39981.1,
+                40385.2,
+                40509.5
+            ],
+            "peak_mb": 82.6,
+            "queries": 412
+        },
+        "donor_api_v3_statistics": {
+            "ms": 2.8,
+            "stdev_ms": 0.1,
+            "stdev_pct": 2.4,
+            "first_ms": 13.6,
+            "runs_ms": [
+                2.8,
+                2.8,
+                2.9
+            ],
+            "peak_mb": 82.1,
+            "queries": 14
+        },
+        "campaigns_api_v3_page1": {
+            "ms": 45291.8,
+            "stdev_ms": 394.5,
+            "stdev_pct": 0.9,
+            "first_ms": 45801.1,
+            "runs_ms": [
+                44729.3,
+                45291.8,
+                45489.7
+            ],
+            "peak_mb": 82.7,
+            "queries": 65
+        },
+        "campaign_api_v3_statistics": {
+            "ms": 939.2,
+            "stdev_ms": 14.4,
+            "stdev_pct": 1.5,
+            "first_ms": 1142.8,
+            "runs_ms": [
+                918.2,
+                939.2,
+                945.9
+            ],
+            "peak_mb": 79.7,
+            "queries": 4
+        },
+        "campaign_api_v3_revenue": {
+            "ms": 603.9,
+            "stdev_ms": 25.2,
+            "stdev_pct": 4.2,
+            "first_ms": 591.8,
+            "runs_ms": [
+                596.1,
+                603.9,
+                643.2
+            ],
+            "peak_mb": 79.8,
+            "queries": 3
+        },
+        "campaigns_data_all_uncached": {
+            "ms": 51130.3,
+            "stdev_ms": 845.2,
+            "stdev_pct": 1.7,
+            "first_ms": 51009.4,
+            "runs_ms": [
+                49833.2,
+                51130.3,
+                51420.5
+            ],
+            "peak_mb": 79.2,
+            "queries": 6
+        },
+        "campaign_grid_12_uncached": {
+            "ms": 12366.8,
+            "stdev_ms": 84.7,
+            "stdev_pct": 0.7,
+            "first_ms": 12199,
+            "runs_ms": [
+                12233.3,
+                12366.8,
+                12390.3
+            ],
+            "peak_mb": 79.5,
+            "queries": 36
+        },
+        "campaign_sum_intended": {
+            "ms": 332.4,
+            "stdev_ms": 35.7,
+            "stdev_pct": 10.8,
+            "first_ms": 472,
+            "runs_ms": [
+                290.7,
+                332.4,
+                361.8
+            ],
+            "peak_mb": 79.6,
+            "queries": 1
+        },
+        "campaign_by_day_1y": {
+            "ms": 236.8,
+            "stdev_ms": 16.6,
+            "stdev_pct": 7,
+            "first_ms": 227.4,
+            "runs_ms": [
+                213,
+                236.8,
+                245.1
+            ],
+            "peak_mb": 79.8,
+            "queries": 1
+        },
+        "forms_list_20_uncached": {
+            "ms": 21656.8,
+            "stdev_ms": 400.1,
+            "stdev_pct": 1.8,
+            "first_ms": 19926,
+            "runs_ms": [
+                21027.1,
+                21656.8,
+                21769.8
+            ],
+            "peak_mb": 82.2,
+            "queries": 241
+        },
+        "reports_income_7d_uncached": {
+            "ms": 457753.2,
+            "stdev_ms": 0,
+            "stdev_pct": 0,
+            "first_ms": 457753.2,
+            "runs_ms": [
+                457753.2
+            ],
+            "peak_mb": 185.5,
+            "queries": 94644,
+            "capped": true
+        },
+        "legacy_stats_earnings_1y_uncached": {
+            "ms": 11350.3,
+            "stdev_ms": 206.1,
+            "stdev_pct": 1.8,
+            "first_ms": 9155.3,
+            "runs_ms": [
+                11146.6,
+                11350.3,
+                11558.8
+            ],
+            "peak_mb": 79.4,
+            "queries": 4
+        },
+        "donor_statistics_query": {
+            "ms": 1.3,
+            "stdev_ms": 0.5,
+            "stdev_pct": 37.8,
+            "first_ms": 7.6,
+            "runs_ms": [
+                0.8,
+                1.3,
+                1.8
+            ],
+            "peak_mb": 79.3,
+            "queries": 4
+        },
+        "donation_create": {
+            "ms": 8.5,
+            "stdev_ms": 0.5,
+            "stdev_pct": 6.4,
+            "first_ms": 67.8,
+            "runs_ms": [
+                8.4,
+                8.5,
+                9.4
+            ],
+            "peak_mb": 80.3,
+            "queries": 52,
+            "meta_rows": 25
+        },
+        "donation_update_status": {
+            "ms": 3.2,
+            "stdev_ms": 1.2,
+            "stdev_pct": 35.8,
+            "first_ms": 6.2,
+            "runs_ms": [
+                3.1,
+                3.2,
+                5.2
+            ],
+            "peak_mb": 80.6,
+            "queries": 18
+        }
+    }
+}
